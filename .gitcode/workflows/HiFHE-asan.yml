@@ -1,0 +1,117 @@
+name: HiFHE-asan-gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request_target:
+    types:
+      - open
+      - update
+      - reopen
+    branches:
+      - main
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  asan-gate:
+    name: ASan gate
+    runs-on: [ubuntu-latest, x64, medium]
+    timeout-minutes: 90
+    env:
+      HITLS_SOURCE_DIR: .ci/openhitls
+      HITLS_BUILD_DIR: .ci/openhitls/build
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:abort_on_error=1:detect_stack_use_after_return=1:strict_string_checks=1:check_initialization_order=1:symbolize=1
+      LSAN_OPTIONS: exitcode=99
+
+    steps:
+      - name: Checkout
+        uses: checkout
+
+      - name: Prepare workspace
+        run: |
+          set -euo pipefail
+          mkdir -p .ci artifacts
+
+      - name: Install build dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils \
+            build-essential \
+            cmake \
+            git \
+            python3
+
+      - name: Clone openHiTLS
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch openhitls-0.4.0-alpha8 \
+            https://gitcode.com/openHiTLS/openhitls.git "$HITLS_SOURCE_DIR"
+          git -C "$HITLS_SOURCE_DIR" log -1 --oneline
+
+      - name: Build openHiTLS
+        run: |
+          set -euo pipefail
+          {
+            cmake \
+              -S "$HITLS_SOURCE_DIR" \
+              -B "$HITLS_BUILD_DIR" \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DHITLS_BUILD_PROFILE=full \
+              -DHITLS_BUILD_STATIC=OFF \
+              -DHITLS_BUILD_SHARED=ON \
+              -DHITLS_CRYPTO_RAND_CB=ON \
+              -DHITLS_CRYPTO_DRBG_GM=ON
+            cmake --build "$HITLS_BUILD_DIR" --parallel "$(nproc)"
+            test -f "$HITLS_BUILD_DIR/libhitls_bsl.so"
+            test -f "$HITLS_BUILD_DIR/libhitls_crypto.so"
+          } 2>&1 | tee artifacts/openhitls-build.log
+
+      - name: Build HiFHE with ASan
+        run: |
+          set -euo pipefail
+          bash testcode/script/build_hifhe.sh debug asan \
+            --hitls_dir "$PWD/$HITLS_SOURCE_DIR" \
+            2>&1 | tee artifacts/hifhe-asan-build.log
+          test -f build/libhifhe_provider.so
+          readelf -d build/libhifhe_provider.so | grep -F 'libasan.so'
+          nm -D build/libhifhe_provider.so | grep -F '__asan_init'
+
+      - name: Build SDV with ASan
+        run: |
+          set -euo pipefail
+          bash testcode/script/build_sdv.sh asan \
+            2>&1 | tee artifacts/sdv-asan-build.log
+          mapfile -d '' test_data < <(find testcode/sdv -name '*.data' -print0)
+          test "${#test_data[@]}" -gt 0
+          for data_file in "${test_data[@]}"; do
+            suite_name=$(basename "$data_file" .data)
+            suite_bin="testcode/output/$suite_name"
+            test -x "$suite_bin"
+            readelf -d "$suite_bin" | grep -F 'libasan.so'
+          done
+
+      - name: Run SDV with ASan
+        run: |
+          set -euo pipefail
+          bash testcode/script/execute_sdv.sh \
+            2>&1 | tee artifacts/sdv-asan.log
+          grep -Eq \
+            'passed:[[:space:]]*[1-9][0-9]*[[:space:]]*, skipped:[[:space:]]*0[[:space:]]*, failed:[[:space:]]*0' \
+            artifacts/sdv-asan.log
+
+      - name: Verify sanitizer logs
+        run: |
+          set -euo pipefail
+          if grep -ER \
+            'ERROR: (AddressSanitizer|LeakSanitizer)|SUMMARY: (AddressSanitizer|LeakSanitizer)|runtime error:|DEADLYSIGNAL' \
+            artifacts; then
+            echo "Sanitizer error found in gate logs" >&2
+            exit 1
+          fi
