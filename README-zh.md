@@ -9,8 +9,6 @@ HiFHE 是面向 openHiTLS 的同态加密 provider 密码库。目前提供 CKKS
 - 支持动态库、静态库、算法裁剪、ASan 和覆盖率构建。
 - 提供基于 openHiTLS SDV 框架的生成式测试。
 
-CKKS 用于实数和复数的近似同态计算。
-
 ## 构建
 
 依赖 CMake 3.16 或更高版本、C11 编译器和 openHiTLS。不传
