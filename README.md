@@ -5,11 +5,26 @@ provides CKKS.
 
 ## Features
 
-- openHiTLS provider discovery, contexts, and lifecycle management.
-- CKKS parameters, key generation, key import/export, encoding, encryption, and
-  decryption.
+### 1. Common capabilities
+
+- openHiTLS provider integration, algorithm registration and discovery, and
+  provider lifecycle management.
+- Compiled algorithm feature queries through `HIFHE_GetFeatures`.
 - Shared, static, algorithm-trimmed, ASan, and coverage builds.
 - Generated tests based on the openHiTLS SDV framework.
+
+### 2. Currently supported algorithms and capabilities
+
+CKKS is currently supported:
+
+- Parameter configuration and algorithm context creation, duplication, and cleanup.
+- Key generation and public/private key import/export.
+- Complex vector encoding and decoding, public-key encryption, and private-key
+  decryption.
+- Key management and encryption/decryption through the openHiTLS provider interface.
+
+Interfaces for homomorphic ciphertext addition, multiplication, rotation,
+rescaling, and bootstrapping are not yet available.
 
 ## Build
 
