@@ -11,8 +11,6 @@ provides CKKS.
 - Shared, static, algorithm-trimmed, ASan, and coverage builds.
 - Generated tests based on the openHiTLS SDV framework.
 
-CKKS provides approximate homomorphic arithmetic over real and complex values.
-
 ## Build
 
 Requirements: CMake 3.16 or newer, a C11 compiler, and openHiTLS. The helper
