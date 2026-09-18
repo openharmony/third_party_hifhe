@@ -16,11 +16,12 @@
 #include "hifhe_provider.h"
 #include "hifhe_provider_impl.h"
 
-#define HIFHE_PROVIDER_ATTR "provider=hifhe"
-
 static CRYPT_EAL_AlgInfo g_hifheKeyMgmt[] = {
 #ifdef HIFHE_CKKS
     {HIFHE_PKEY_CKKS, g_hifheKeyMgmtCkks, HIFHE_PROVIDER_ATTR},
+#endif
+#ifdef HIFHE_BGV
+    {HIFHE_PKEY_BGV, g_hifheKeyMgmtBgv, HIFHE_PROVIDER_ATTR},
 #endif
     CRYPT_EAL_ALGINFO_END
 };
@@ -28,6 +29,9 @@ static CRYPT_EAL_AlgInfo g_hifheKeyMgmt[] = {
 static CRYPT_EAL_AlgInfo g_hifheCipher[] = {
 #ifdef HIFHE_CKKS
     {HIFHE_PKEY_CKKS, g_hifheCipherCkks, HIFHE_PROVIDER_ATTR},
+#endif
+#ifdef HIFHE_BGV
+    {HIFHE_PKEY_BGV, g_hifheCipherBgv, HIFHE_PROVIDER_ATTR},
 #endif
     CRYPT_EAL_ALGINFO_END
 };
@@ -71,11 +75,14 @@ static CRYPT_EAL_Func g_hifheProviderFuncs[] = {
 
 uint32_t HIFHE_GetFeatures(void)
 {
+    uint32_t features = 0;
 #ifdef HIFHE_CKKS
-    return HIFHE_FEATURE_CKKS;
-#else
-    return 0;
+    features |= HIFHE_FEATURE_CKKS;
 #endif
+#ifdef HIFHE_BGV
+    features |= HIFHE_FEATURE_BGV;
+#endif
+    return features;
 }
 
 int32_t CRYPT_EAL_ProviderInit(CRYPT_EAL_ProvMgrCtx *mgrCtx, BSL_Param *param,

@@ -9,6 +9,7 @@ HIFHE_ENABLE_GCOV=OFF
 HIFHE_BUILD_SHARED=ON
 HIFHE_BUILD_STATIC=ON
 HIFHE_CKKS=ON
+HIFHE_BGV=ON
 HITLS_ROOT_PATH=""
 BUILD_ARGS=""
 OPENHITLS_REPO=${OPENHITLS_REPO:-https://github.com/openHiTLS/openHiTLS.git}
@@ -21,14 +22,14 @@ while [[ $# -gt 0 ]]; do
         gcov) HIFHE_ENABLE_GCOV=ON; shift ;;
         shared) HIFHE_BUILD_STATIC=OFF; shift ;;
         static) HIFHE_BUILD_SHARED=OFF; shift ;;
-        --enable)
-            [[ $# -ge 2 && "${2,,}" == "ckks" ]] || { echo "Unknown algorithm" >&2; exit 1; }
-            HIFHE_CKKS=ON
-            shift 2
-            ;;
-        --disable)
-            [[ $# -ge 2 && "${2,,}" == "ckks" ]] || { echo "Unknown algorithm" >&2; exit 1; }
-            HIFHE_CKKS=OFF
+        --enable|--disable)
+            [[ $# -ge 2 ]] || { echo "Missing algorithm" >&2; exit 1; }
+            [[ "$1" == "--enable" ]] && STATE=ON || STATE=OFF
+            case "${2,,}" in
+                ckks) HIFHE_CKKS=${STATE} ;;
+                bgv) HIFHE_BGV=${STATE} ;;
+                *) echo "Unknown algorithm: $2" >&2; exit 1 ;;
+            esac
             shift 2
             ;;
         --hitls_dir)
@@ -42,7 +43,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Usage: $0 [debug] [asan] [gcov] [shared|static] [--enable ckks] [--disable ckks]"
+            echo "Usage: $0 [debug] [asan] [gcov] [shared|static] [--enable ckks|bgv] [--disable ckks|bgv]"
             echo "          [--hitls_dir PATH] [--build_args FLAGS]"
             exit 0
             ;;
@@ -72,6 +73,7 @@ cmake -S "${HIFHE_ROOT_DIR}" -B "${HIFHE_ROOT_DIR}/build" \
     -DHIFHE_BUILD_SHARED="${HIFHE_BUILD_SHARED}" \
     -DHIFHE_BUILD_STATIC="${HIFHE_BUILD_STATIC}" \
     -DHIFHE_CKKS="${HIFHE_CKKS}" \
+    -DHIFHE_BGV="${HIFHE_BGV}" \
     -DHITLS_ROOT_PATH="${HITLS_ROOT_PATH}"
 cmake --build "${HIFHE_ROOT_DIR}/build" --parallel
 printf '%s\n' "${HITLS_ROOT_PATH}" > "${HIFHE_ROOT_DIR}/build/base_path.txt"

@@ -35,3 +35,8 @@ if(HIFHE_CKKS)
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/ckks/include>
     )
 endif()
+if(HIFHE_BGV)
+    target_include_directories(_hifhe_public_headers INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/bgv/include>
+    )
+endif()
