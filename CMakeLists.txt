@@ -30,7 +30,11 @@ install(FILES "${CMAKE_BINARY_DIR}/include/hifhe_config.h"
 if(HIFHE_CKKS)
     install(FILES src/ckks/include/crypt_ckks.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
+if(HIFHE_BGV)
+    install(FILES src/bgv/include/crypt_bgv.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif()
 
 message(STATUS "[HiFHE] CKKS: ${HIFHE_CKKS}")
+message(STATUS "[HiFHE] BGV: ${HIFHE_BGV}")
 message(STATUS "[HiFHE] shared: ${HIFHE_BUILD_SHARED}")
 message(STATUS "[HiFHE] static: ${HIFHE_BUILD_STATIC}")

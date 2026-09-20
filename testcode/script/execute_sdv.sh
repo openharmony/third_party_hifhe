@@ -16,7 +16,9 @@ export LD_LIBRARY_PATH="${HIFHE_PROVIDER_DIR}:${HITLS_ROOT_DIR}/build${LD_LIBRAR
 if [[ $# -gt 0 ]]; then
     IFS='|' read -ra SUITES <<< "$1"
 else
-    mapfile -t SUITES < <(find "${HIFHE_ROOT_DIR}/testcode/sdv" -name '*.data' -printf '%f\n' | sed 's/\.data$//')
+    # What this provider actually built. A suite whose algorithm was
+    # disabled has no binary here.
+    mapfile -t SUITES < <(find . -maxdepth 1 -type f -name 'test_suite*' -executable -printf '%f\n' | sort)
 fi
 
 for SUITE in "${SUITES[@]}"; do

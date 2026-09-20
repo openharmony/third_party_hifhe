@@ -14,5 +14,6 @@
 #define HIFHE_CONFIG_H
 
 #cmakedefine HIFHE_CKKS
+#cmakedefine HIFHE_BGV
 
 #endif

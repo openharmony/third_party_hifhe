@@ -16,6 +16,7 @@ set(HITLS_LIB_DIR "${HITLS_ROOT_PATH}/build" CACHE PATH
 option(HIFHE_BUILD_SHARED "Build the shared provider library" ON)
 option(HIFHE_BUILD_STATIC "Build the static provider library" ON)
 option(HIFHE_CKKS "Build CKKS" ON)
+option(HIFHE_BGV "Build BGV" ON)
 option(HIFHE_ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(HIFHE_ENABLE_GCOV "Enable coverage" OFF)
 
