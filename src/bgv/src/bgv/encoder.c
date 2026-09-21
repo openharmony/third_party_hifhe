@@ -87,7 +87,10 @@ HIFHE_ERROR BGV_Encoder_Encode(Plaintext *out, const uint64_t *msg, uint32_t slo
         for (uint32_t j = 0; j < N; ++j) coeff.data[j] = msg[j] % t;
     }
     cr = Kernel_Ntt_Inverse(coeff.data, &ctx->ptNtt);
-    if (cr != HIFHE_SUCCESS) { Uint64Vector_Destroy(&coeff); return cr; }
+    if (cr != HIFHE_SUCCESS) {
+        Uint64Vector_Destroy(&coeff);
+        return cr;
+    }
 
     for (uint32_t i = 0; i < L; ++i) {
         /* coeff[j] < t < q_i, so the residue is the value itself. */
@@ -219,10 +222,16 @@ HIFHE_ERROR BGV_Encoder_Decode(uint64_t *msg, uint32_t slotCount,
     CrtPoly view;
     r = RLWE_CrtPoly_CreateFromExist(&view, tmp.data, tmp.dataSize,
                                      &tmp.config.crtConfig, &ctx->rlweContext);
-    if (r != HIFHE_SUCCESS) { BGV_Plaintext_Destroy(&tmp); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Plaintext_Destroy(&tmp);
+        return r;
+    }
     r = RLWE_CrtPoly_ToPoly(&view);
     RLWE_CrtPoly_Destroy(&view);
-    if (r != HIFHE_SUCCESS) { BGV_Plaintext_Destroy(&tmp); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Plaintext_Destroy(&tmp);
+        return r;
+    }
 
     Modulus t = ctx->bgvParameter->plainMod;
     r = CrtCenteredModT(msg, tmp.data, &tmp.config.crtConfig.rnsbase, N, t);

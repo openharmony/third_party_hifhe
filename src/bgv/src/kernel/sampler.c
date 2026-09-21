@@ -155,6 +155,14 @@ HIFHE_ERROR Kernel_Sampler_TernaryFixedWeight(int64_t *out, uint32_t count,
     for (uint32_t i = 0; i < neg; ++i) out[pos + i] = -1;
     for (uint32_t i = pos + neg; i < count; ++i) out[i] = 0;
 
+    /* This sampler drives the stream directly instead of going through
+     * DrawBytes, so it has to enforce the same contract: a seeded draw
+     * carries a label, and the stream copies a full seed. */
+    if (src != NULL && src->seed != NULL &&
+        (src->label == NULL || src->seedLen != HIFHE_RAND_SEED_BYTES)) {
+        return HIFHE_PARAM_INVALID;
+    }
+
     /* Fisher-Yates walking down. The i == 1 step swaps a slot with itself
      * but still consumes a word; dropping it shifts every later draw. */
     BgvRandStream stream;

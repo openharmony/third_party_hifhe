@@ -58,16 +58,12 @@ HIFHE_ERROR BGV_SecretKey_GetPow(CrtPoly *out, const SecretKey *sk, uint32_t pow
             memcpy(dst, src, N * sizeof(uint64_t));
             continue;
         }
-        /* power is 2 or 3 in practice. Square-and-multiply would cost two
-         * 64-bit divisions plus three or five 128-bit ones per coefficient.
-         * Repeated multiplication costs power-1 multiplications. */
+        /* Square-and-multiply. Repeated multiplication is marginally cheaper
+         * at the powers a well-formed ciphertext needs, but the component
+         * count arrives on the wire and decryption asks for every power up to
+         * it, which makes a linear cost per power quadratic in the input. */
         for (uint32_t j = 0; j < N; ++j) {
-            uint64_t acc = src[j] % q;
-            uint64_t base = acc;
-            for (uint32_t e = 1; e < power; ++e) {
-                acc = Kernel_MulMod(acc, base, q);
-            }
-            dst[j] = acc;
+            dst[j] = Kernel_PowMod(src[j], power, q);
         }
     }
     return HIFHE_SUCCESS;
@@ -96,7 +92,10 @@ HIFHE_ERROR BGV_RelinKeys_Copy(RelinKeys *dst, const RelinKeys *src)
     if (r != HIFHE_SUCCESS) return r;
     for (uint32_t i = 0; i < src->dnum; ++i) {
         r = BGV_Ciphertext_Copy(&dst->pieces[i], &src->pieces[i]);
-        if (r != HIFHE_SUCCESS) { BGV_RelinKeys_Destroy(dst); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_RelinKeys_Destroy(dst);
+            return r;
+        }
     }
     return HIFHE_SUCCESS;
 }
@@ -162,10 +161,16 @@ HIFHE_ERROR BGV_GaloisKeys_Copy(GaloisKeys *dst, const GaloisKeys *src)
     for (uint32_t i = 0; i < src->count; ++i) {
         const GaloisKeyPiece *s = &src->entries[i];
         r = BGV_GaloisKeyPiece_Create(&dst->entries[i], s->galoisElt, s->rnsSize, s->digits);
-        if (r != HIFHE_SUCCESS) { BGV_GaloisKeys_Destroy(dst); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_GaloisKeys_Destroy(dst);
+            return r;
+        }
         for (uint32_t j = 0; j < s->dnum; ++j) {
             r = BGV_Ciphertext_Copy(&dst->entries[i].pieces[j], &s->pieces[j]);
-            if (r != HIFHE_SUCCESS) { BGV_GaloisKeys_Destroy(dst); return r; }
+            if (r != HIFHE_SUCCESS) {
+                BGV_GaloisKeys_Destroy(dst);
+                return r;
+            }
         }
     }
     return HIFHE_SUCCESS;

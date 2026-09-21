@@ -99,7 +99,12 @@ HIFHE_ERROR BGV_Plaintext_Copy(Plaintext *dst, const Plaintext *src)
 HIFHE_ERROR BGV_Plaintext_Destroy(Plaintext *self)
 {
     if (self == NULL) return HIFHE_NULL_INPUT;
-    if (self->ownsData && self->data != NULL) BSL_SAL_Free(self->data);
+    /* Secret keys are plaintexts, and decrypted messages are too: wipe the
+     * coefficients rather than leaving them in freed memory. */
+    if (self->ownsData && self->data != NULL) {
+        BSL_SAL_CleanseData(self->data, self->dataSize * (uint32_t)sizeof(uint64_t));
+        BSL_SAL_Free(self->data);
+    }
     BGV_PlaintextConfig_Destroy(&self->config);
     self->data     = NULL;
     self->dataSize = 0u;

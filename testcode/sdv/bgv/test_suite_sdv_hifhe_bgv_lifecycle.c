@@ -35,9 +35,10 @@
 #include "test.h"
 /* END_HEADER */
 
-/* M0 scope: exercises the lifecycle path only. All heavier operations
- * (encrypt, HEAdd, HEMul, key marshal, serdes) live in later milestones
- * and their own SDV files. This file must remain green as the code grows. */
+/* Context lifecycle through the provider surface: creation, parameter
+ * loading, key generation, duplication and release. Encryption, the HE
+ * operations, key marshalling and serdes are covered by
+ * test_suite_sdv_hifhe_bgv_ops. */
 
 static CRYPT_EAL_PkeyCtx *BgvNewCtx(int withPreset)
 {
@@ -221,11 +222,10 @@ EXIT:
 
 /* @
 * @test  SDV_CRYPTO_HIFHE_BGV_GEN_STUB_TC001
-* @title  PkeyGen advances the role machine without producing keys (M0 stub).
-* @brief  Milestone M0 keygen path only marks the ctx as KEYPAIR; real
-*         crypto lands in M3. This case documents / verifies that the
-*         stub returns HIFHE_SUCCESS after a preset is loaded and does not
-*         crash on FreeCtx.
+* @title  PkeyGen builds the context and produces a key pair.
+* @brief  Drives the whole generation path (context build, ternary secret,
+*         public key) through the provider surface, and checks FreeCtx
+*         cleans up afterwards.
 * @auto  TRUE
 @ */
 /* BEGIN_CASE */

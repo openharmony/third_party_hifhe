@@ -54,4 +54,9 @@ ExternalProject_Add(gen_testcase
     EXCLUDE_FROM_ALL TRUE
 )
 
+option(BUILD_BENCHMARK "Build the benchmark alongside the test suites" OFF)
+
 add_subdirectory(sdv)
+if(BUILD_BENCHMARK)
+    add_subdirectory(benchmark)
+endif()

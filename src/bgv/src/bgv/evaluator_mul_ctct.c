@@ -67,7 +67,10 @@ HIFHE_ERROR BGV_Evaluator_MulCtCt(Ciphertext *out, const Ciphertext *a, const Ci
             if (r != HIFHE_SUCCESS) break;
         }
     }
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&prod); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&prod);
+        return r;
+    }
     /* correctionFactor accumulates multiplicatively in BGV. */
     prod.config.correctionFactor =
         (uint64_t)(((ModulusWide)a->config.correctionFactor

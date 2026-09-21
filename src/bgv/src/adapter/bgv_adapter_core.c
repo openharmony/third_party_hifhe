@@ -21,6 +21,7 @@
  */
 
 #include <string.h>
+#include <stdint.h>
 #include "bsl_sal.h"
 #include "crypt_types.h"
 #include "crypt_params_key.h"
@@ -41,12 +42,30 @@
 void Bgv_FreeState(BgvState *st)
 {
     if (st == NULL) return;
-    if (st->haveGalois) { BGV_GaloisKeys_Destroy(&st->galoisKeys); st->haveGalois = 0u; }
-    if (st->haveRelin)  { BGV_RelinKeys_Destroy(&st->relinKeys);   st->haveRelin  = 0u; }
-    if (st->havePk)     { BGV_Ciphertext_Destroy(&st->pk);         st->havePk     = 0u; }
-    if (st->haveKeygen) { BGV_KeyGenerator_Destroy(&st->keygen);   st->haveKeygen = 0u; }
-    if (st->haveContext){ BGV_BGVContext_Destroy(&st->context);    st->haveContext= 0u; }
-    if (st->haveParams) { BGV_BGVParameter_Destroy(&st->params);   st->haveParams = 0u; }
+    if (st->haveGalois) {
+        BGV_GaloisKeys_Destroy(&st->galoisKeys);
+        st->haveGalois = 0u;
+    }
+    if (st->haveRelin) {
+        BGV_RelinKeys_Destroy(&st->relinKeys);
+        st->haveRelin  = 0u;
+    }
+    if (st->havePk) {
+        BGV_Ciphertext_Destroy(&st->pk);
+        st->havePk     = 0u;
+    }
+    if (st->haveKeygen) {
+        BGV_KeyGenerator_Destroy(&st->keygen);
+        st->haveKeygen = 0u;
+    }
+    if (st->haveContext) {
+        BGV_BGVContext_Destroy(&st->context);
+        st->haveContext= 0u;
+    }
+    if (st->haveParams) {
+        BGV_BGVParameter_Destroy(&st->params);
+        st->haveParams = 0u;
+    }
     memset(st, 0, sizeof(*st));
 }
 
@@ -76,6 +95,14 @@ HIFHE_ERROR Bgv_DupState(BgvState *dst, const BgvState *src)
     if (r != HIFHE_SUCCESS) goto fail;
     dst->haveContext = 1u;
     dst->context.useSlotMap = src->context.useSlotMap;
+    /* Context creation zeroes the seed store. Without this the duplicate
+     * falls back to the DRBG, and the same seed stops giving the same keys. */
+    if (src->context.rlweContext.seedCtx.hasSeed) {
+        r = BgvContext_SetSeed(&dst->context.rlweContext.seedCtx,
+                               src->context.rlweContext.seedCtx.seed,
+                               HIFHE_CTX_SEED_LEN);
+        if (r != HIFHE_SUCCESS) goto fail;
+    }
 
     /* Key generator + secret key. */
     if (src->haveKeygen) {
@@ -84,7 +111,10 @@ HIFHE_ERROR Bgv_DupState(BgvState *dst, const BgvState *src)
         dst->haveKeygen = 1u;
         if (src->keygen.sk != NULL) {
             dst->keygen.sk = BGV_SecretKey_New();
-            if (dst->keygen.sk == NULL) { r = HIFHE_MEMORY_ERROR; goto fail; }
+            if (dst->keygen.sk == NULL) {
+                r = HIFHE_MEMORY_ERROR;
+                goto fail;
+            }
             r = BGV_Plaintext_Copy(dst->keygen.sk, src->keygen.sk);
             if (r != HIFHE_SUCCESS) goto fail;
             dst->keygen.sk->context = &dst->context;
@@ -168,7 +198,10 @@ HIFHE_ERROR Bgv_BuildContext(CRYPT_BGV_Ctx *ctx)
             Modulus q = 0u;
             r = Kernel_Prime_FindProth(&q, p->cipherModBit.data[i], p->polyDegree,
                                        avoidBuf, avoidLen);
-            if (r != HIFHE_SUCCESS) { Uint64Vector_Destroy(&cipherMod); return r; }
+            if (r != HIFHE_SUCCESS) {
+                Uint64Vector_Destroy(&cipherMod);
+                return r;
+            }
             cipherMod.data[i] = q;
             if (avoidLen < HIFHE_BGV_MAX_CHAIN_LEN) avoidBuf[avoidLen++] = q;
         }
@@ -178,7 +211,10 @@ HIFHE_ERROR Bgv_BuildContext(CRYPT_BGV_Ctx *ctx)
     Modulus plainMod = p->plainMod;
     if (plainMod == 0u) {
         r = Kernel_Prime_FindProth(&plainMod, p->plainModBit, p->polyDegree, NULL, 0u);
-        if (r != HIFHE_SUCCESS) { Uint64Vector_Destroy(&cipherMod); return r; }
+        if (r != HIFHE_SUCCESS) {
+            Uint64Vector_Destroy(&cipherMod);
+            return r;
+        }
     } else if (!BGV_Params_IsPlainModNttFriendly(plainMod, p->polyDegree)) {
         /* A pinned plainMod must still be Proth for this N,
          * else the LUT encoder has no transform. */
@@ -205,7 +241,10 @@ HIFHE_ERROR Bgv_BuildContext(CRYPT_BGV_Ctx *ctx)
             cipherArg = cipherLuts;
             for (uint32_t i = 0; i < limbs; ++i) {
                 cipherLuts[i] = BgvUserPara_CipherLut(ctx->lutCache, i);
-                if (cipherLuts[i] == NULL) { cipherArg = NULL; break; }
+                if (cipherLuts[i] == NULL) {
+                    cipherArg = NULL;
+                    break;
+                }
             }
         }
     }
@@ -233,9 +272,18 @@ HIFHE_ERROR Bgv_BuildContext(CRYPT_BGV_Ctx *ctx)
  * leaves them describing the old one. */
 static void Bgv_ClearDerivedKeys(BgvState *st)
 {
-    if (st->haveGalois) { BGV_GaloisKeys_Destroy(&st->galoisKeys); st->haveGalois = 0u; }
-    if (st->haveRelin)  { BGV_RelinKeys_Destroy(&st->relinKeys);   st->haveRelin  = 0u; }
-    if (st->havePk)     { BGV_Ciphertext_Destroy(&st->pk);         st->havePk     = 0u; }
+    if (st->haveGalois) {
+        BGV_GaloisKeys_Destroy(&st->galoisKeys);
+        st->haveGalois = 0u;
+    }
+    if (st->haveRelin) {
+        BGV_RelinKeys_Destroy(&st->relinKeys);
+        st->haveRelin  = 0u;
+    }
+    if (st->havePk) {
+        BGV_Ciphertext_Destroy(&st->pk);
+        st->havePk     = 0u;
+    }
 }
 
 HIFHE_ERROR Bgv_Gen(CRYPT_BGV_Ctx *ctx)
@@ -262,7 +310,10 @@ HIFHE_ERROR Bgv_GenRelinKey(CRYPT_BGV_Ctx *ctx)
 {
     if (ctx == NULL) return HIFHE_NULL_INPUT;
     if (!ctx->bgv.haveKeygen || ctx->bgv.keygen.sk == NULL) return HIFHE_KEY_NOT_SET;
-    if (ctx->bgv.haveRelin) { BGV_RelinKeys_Destroy(&ctx->bgv.relinKeys); ctx->bgv.haveRelin = 0u; }
+    if (ctx->bgv.haveRelin) {
+        BGV_RelinKeys_Destroy(&ctx->bgv.relinKeys);
+        ctx->bgv.haveRelin = 0u;
+    }
     /* `relinDnum` is digits per RNS limb; 0/1 means "cover the widest limb".
      * Too few digits would drop the high end of the keyswitch decomposition
      * and decrypt to the wrong plaintext, so raise it to what the chain needs. */
@@ -279,7 +330,10 @@ HIFHE_ERROR Bgv_GenGaloisKeys(CRYPT_BGV_Ctx *ctx, const uint64_t *elts, uint32_t
 {
     if (ctx == NULL || elts == NULL || count == 0u) return HIFHE_NULL_INPUT;
     if (!ctx->bgv.haveKeygen || ctx->bgv.keygen.sk == NULL) return HIFHE_KEY_NOT_SET;
-    if (ctx->bgv.haveGalois) { BGV_GaloisKeys_Destroy(&ctx->bgv.galoisKeys); ctx->bgv.haveGalois = 0u; }
+    if (ctx->bgv.haveGalois) {
+        BGV_GaloisKeys_Destroy(&ctx->bgv.galoisKeys);
+        ctx->bgv.haveGalois = 0u;
+    }
     int32_t r = BGV_KeyGenerator_GenGaloisKeys(&ctx->bgv.galoisKeys, elts, count, &ctx->bgv.keygen);
     if (r != HIFHE_SUCCESS) return r;
     ctx->bgv.haveGalois = 1u;
@@ -336,7 +390,10 @@ HIFHE_ERROR Bgv_SetPub(CRYPT_BGV_Ctx *ctx, BSL_Param *param)
     if (r != HIFHE_SUCCESS) return r;
     const BSL_Param *p = BSL_PARAM_FindConstParam(param, HIFHE_PARAM_BGV_PUBKEY);
     if (p == NULL) return HIFHE_PARAM_INVALID;
-    if (ctx->bgv.havePk) { BGV_Ciphertext_Destroy(&ctx->bgv.pk); ctx->bgv.havePk = 0u; }
+    if (ctx->bgv.havePk) {
+        BGV_Ciphertext_Destroy(&ctx->bgv.pk);
+        ctx->bgv.havePk = 0u;
+    }
     r = BgvSerDes_LoadPubKey(&ctx->bgv.pk, (const uint8_t *)p->value, p->valueLen,
                              &ctx->bgv.context);
     if (r != HIFHE_SUCCESS) return r;
@@ -364,7 +421,10 @@ HIFHE_ERROR Bgv_SetPrv(CRYPT_BGV_Ctx *ctx, BSL_Param *param)
     if (fresh == NULL) return HIFHE_MEMORY_ERROR;
     r = BgvSerDes_LoadPrvKey(fresh, (const uint8_t *)p->value, p->valueLen,
                              &ctx->bgv.context);
-    if (r != HIFHE_SUCCESS) { BGV_SecretKey_Free(&fresh); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_SecretKey_Free(&fresh);
+        return r;
+    }
     Bgv_ClearDerivedKeys(&ctx->bgv);
     BGV_SecretKey_Free(&ctx->bgv.keygen.sk);
     ctx->bgv.keygen.sk = fresh;
@@ -393,11 +453,17 @@ HIFHE_ERROR Bgv_Encrypt(CRYPT_BGV_Ctx *ctx, const uint8_t *data, uint32_t dataLe
     memset(&ct, 0, sizeof(ct));
     if (ctx->bgv.haveKeygen && ctx->bgv.keygen.sk != NULL) {
         r = BGV_Encryptor_CreateFromSecret(&enc, ctx->bgv.keygen.sk, &ctx->bgv.context);
-        if (r != HIFHE_SUCCESS) { BGV_Plaintext_Destroy(&pt); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_Plaintext_Destroy(&pt);
+            return r;
+        }
         r = BGV_Encryptor_EncryptSymmetric(&ct, &pt, &enc);
     } else {
         r = BGV_Encryptor_CreateFromPublic(&enc, &ctx->bgv.pk, NULL, &ctx->bgv.context);
-        if (r != HIFHE_SUCCESS) { BGV_Plaintext_Destroy(&pt); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_Plaintext_Destroy(&pt);
+            return r;
+        }
         r = BGV_Encryptor_EncryptAsymmetric(&ct, &pt, &enc);
     }
     BGV_Encryptor_Destroy(&enc);
@@ -420,7 +486,10 @@ HIFHE_ERROR Bgv_Decrypt(CRYPT_BGV_Ctx *ctx, const uint8_t *data, uint32_t dataLe
     if (r != HIFHE_SUCCESS) return r;
     Encryptor enc;
     r = BGV_Encryptor_CreateFromSecret(&enc, ctx->bgv.keygen.sk, &ctx->bgv.context);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&ct); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&ct);
+        return r;
+    }
     Plaintext pt;
     memset(&pt, 0, sizeof(pt));
     r = BGV_Encryptor_Decrypt(&pt, &ct, &enc);
@@ -467,7 +536,10 @@ HIFHE_ERROR Bgv_HEAdd(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
 
     Evaluator ev;
     r = BGV_Evaluator_Create(&ev, bctx, NULL, NULL);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&c1); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&c1);
+        return r;
+    }
 
     Ciphertext dst;
     memset(&dst, 0, sizeof(dst));
@@ -492,7 +564,10 @@ HIFHE_ERROR Bgv_HEAdd(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
     }
     BGV_Ciphertext_Destroy(&c1);
     BGV_Evaluator_Destroy(&ev);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&dst); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&dst);
+        return r;
+    }
     r = BgvSerDes_DumpCiphertext(&dst, out, outLen, ctx->algId);
     BGV_Ciphertext_Destroy(&dst);
     return r;
@@ -521,7 +596,10 @@ HIFHE_ERROR Bgv_HEMul(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
     const RelinKeys *rlk = ctx->bgv.haveRelin ? &ctx->bgv.relinKeys : NULL;
     Evaluator ev;
     r = BGV_Evaluator_Create(&ev, bctx, rlk, NULL);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&c1); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&c1);
+        return r;
+    }
 
     Ciphertext dst;
     memset(&dst, 0, sizeof(dst));
@@ -536,7 +614,8 @@ HIFHE_ERROR Bgv_HEMul(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
                 /* The relin key only collapses s^2, applies to a size-3 product.
                  * Wider products pass through and decrypt via the secret-key powers. 
                  */
-                if (rlk != NULL && big.config.ciphertextSize == 3u) {
+                if (rlk != NULL && big.config.ciphertextSize == 3u &&
+                    big.config.crtConfig.rnsbase.size == rlk->rnsSize) {
                     r = BGV_Evaluator_Relinearize(&dst, &big, &ev);
                 } else {
                     r = BGV_Ciphertext_Copy(&dst, &big);
@@ -556,7 +635,8 @@ HIFHE_ERROR Bgv_HEMul(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
             r = HIFHE_PARAM_INVALID;
         }
         else {
-            uint64_t x = *(const uint64_t *)pConst->value;
+            uint64_t x;
+            memcpy(&x, pConst->value, sizeof(x));
             r = BGV_Evaluator_MulCtScalar(&dst, &c1, x, &ev);
         }
     } else {
@@ -564,7 +644,10 @@ HIFHE_ERROR Bgv_HEMul(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
     }
     BGV_Ciphertext_Destroy(&c1);
     BGV_Evaluator_Destroy(&ev);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&dst); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&dst);
+        return r;
+    }
     r = BgvSerDes_DumpCiphertext(&dst, out, outLen, ctx->algId);
     BGV_Ciphertext_Destroy(&dst);
     return r;
@@ -584,9 +667,23 @@ HIFHE_ERROR Bgv_HEMsgEncode(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
     Encoder enc;
     int32_t r = BGV_Encoder_Create(&enc, bctx);
     if (r != HIFHE_SUCCESS) return r;
+    /* OCTETS promises no alignment, so only pay for a copy when the
+     * caller's buffer is actually misaligned. */
+    const uint64_t *msg = (const uint64_t *)pMsg->value;
+    uint64_t *msgCopy = NULL;
+    if (((uintptr_t)pMsg->value % sizeof(uint64_t)) != 0u) {
+        msgCopy = (uint64_t *)BSL_SAL_Malloc(pMsg->valueLen);
+        if (msgCopy == NULL) {
+            BGV_Encoder_Destroy(&enc);
+            return HIFHE_MEMORY_ERROR;
+        }
+        memcpy(msgCopy, pMsg->value, pMsg->valueLen);
+        msg = msgCopy;
+    }
     Plaintext pt; memset(&pt, 0, sizeof(pt));
-    r = BGV_Encoder_Encode(&pt, (const uint64_t *)pMsg->value, N, &enc);
+    r = BGV_Encoder_Encode(&pt, msg, N, &enc);
     BGV_Encoder_Destroy(&enc);
+    BSL_SAL_Free(msgCopy);
     if (r != HIFHE_SUCCESS) return r;
 
     r = BgvSerDes_DumpPlaintext(&pt, out, outLen, ctx->algId);
@@ -617,10 +714,26 @@ HIFHE_ERROR Bgv_HEMsgDecode(const CRYPT_BGV_Ctx *ctx, const BSL_Param *input,
     }
     Encoder enc;
     r = BGV_Encoder_Create(&enc, bctx);
-    if (r != HIFHE_SUCCESS) { BGV_Plaintext_Destroy(&pt); return r; }
-    r = BGV_Encoder_Decode((uint64_t *)out, N, &pt, &enc);
+    if (r != HIFHE_SUCCESS) {
+        BGV_Plaintext_Destroy(&pt);
+        return r;
+    }
+    uint64_t *dstMsg = (uint64_t *)out;
+    uint64_t *outCopy = NULL;
+    if (((uintptr_t)out % sizeof(uint64_t)) != 0u) {
+        outCopy = (uint64_t *)BSL_SAL_Malloc(need);
+        if (outCopy == NULL) {
+            BGV_Encoder_Destroy(&enc);
+            BGV_Plaintext_Destroy(&pt);
+            return HIFHE_MEMORY_ERROR;
+        }
+        dstMsg = outCopy;
+    }
+    r = BGV_Encoder_Decode(dstMsg, N, &pt, &enc);
     BGV_Encoder_Destroy(&enc);
     BGV_Plaintext_Destroy(&pt);
+    if (r == HIFHE_SUCCESS && outCopy != NULL) memcpy(out, outCopy, need);
+    BSL_SAL_Free(outCopy);
     if (r != HIFHE_SUCCESS) return r;
     *outLen = need;
     return HIFHE_SUCCESS;
@@ -699,7 +812,10 @@ static HIFHE_ERROR RunCtOp(CRYPT_BGV_Ctx *ctx, BSL_Param *param, BgvCtOp op,
     if (r != HIFHE_SUCCESS) return r;
     Evaluator ev;
     r = BGV_Evaluator_Create(&ev, bctx, rlk, glk);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&in); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&in);
+        return r;
+    }
     Ciphertext dst;
     memset(&dst, 0, sizeof(dst));
     r = op(&dst, &in, &ev, arg);

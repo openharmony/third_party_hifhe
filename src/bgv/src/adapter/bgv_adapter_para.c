@@ -86,12 +86,18 @@ HIFHE_ERROR BgvUserPara_EnsureLut(BgvUserPara *p, const BGVParameter *param)
     for (uint32_t i = 0; i < L; ++i) {
         int32_t r = Kernel_Ntt_BuildTables(&scratch, blob + (size_t)i * stride,
                                            cipherMod->data[i], N);
-        if (r != HIFHE_SUCCESS) { BSL_SAL_Free(blob); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BSL_SAL_Free(blob);
+            return r;
+        }
         p->lutCipherMod[i] = cipherMod->data[i];
     }
     int32_t r = Kernel_Ntt_BuildTables(&scratch, blob + (size_t)L * stride,
                                        param->plainMod, N);
-    if (r != HIFHE_SUCCESS) { BSL_SAL_Free(blob); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BSL_SAL_Free(blob);
+        return r;
+    }
 
     p->lutBlob       = blob;
     p->lutPolyDegree = N;

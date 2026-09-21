@@ -48,12 +48,19 @@ HIFHE_ERROR BGV_Evaluator_Rerandomize(Ciphertext *out, const Ciphertext *in,
 
     Int64Vector e;
     r = Int64Vector_Create(&e, NULL, N);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(out);
+        return r;
+    }
 
     CrtPoly noise;
     memset(&noise, 0, sizeof(noise));
     r = RLWE_CrtPoly_Create(&noise, &out->config.crtConfig, &ctx->rlweContext);
-    if (r != HIFHE_SUCCESS) { Int64Vector_Cleanse(&e); BGV_Ciphertext_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        Int64Vector_Cleanse(&e);
+        BGV_Ciphertext_Destroy(out);
+        return r;
+    }
 
     for (uint32_t k = 0; k < out->config.ciphertextSize; ++k) {
         /* DRBG, not the context seed: a seeded stream replays. */

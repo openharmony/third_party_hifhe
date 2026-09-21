@@ -111,6 +111,13 @@ typedef struct CrtPoly {
 } CrtPoly;
 
 /* CalDataSize chain. static inline so the arithmetic folds at compile time. */
+/* A standalone single-modulus polynomial. The library itself works through
+ * CrtPoly and its slice views; these exist for callers that measure or drive
+ * one modulus directly, such as testcode/benchmark. */
+HIFHE_ERROR RLWE_RnsPoly_Create (RnsPoly *out, const RnsPolyConfig *cfg,
+                                RlweContext *ctx);
+HIFHE_ERROR RLWE_RnsPoly_Destroy(RnsPoly *self);
+
 static inline uint32_t RLWE_RnsPoly_CalDataSize(const RnsPolyConfig *cfg,
                                                 const RlweContext *ctx)
 {
