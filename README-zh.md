@@ -1,6 +1,6 @@
 # HiFHE
 
-HiFHE 是面向 openHiTLS 的同态加密 provider 密码库。目前提供 CKKS 算法。
+HiFHE 是面向 openHiTLS 的同态加密 provider 密码库。目前提供 CKKS 和 BGV 算法。
 
 ## 功能
 
@@ -13,7 +13,7 @@ HiFHE 是面向 openHiTLS 的同态加密 provider 密码库。目前提供 CKKS
 
 ### 2. 当前支持的算法与能力
 
-当前支持 CKKS：
+#### CKKS
 
 - 参数配置、算法上下文创建、复制和释放。
 - 密钥生成、公私钥导入导出。
@@ -21,6 +21,13 @@ HiFHE 是面向 openHiTLS 的同态加密 provider 密码库。目前提供 CKKS
 - 通过 openHiTLS provider 调用密钥管理和加解密接口。
 
 尚未提供密文同态加法、乘法、旋转、重缩放及自举接口。
+
+#### BGV
+
+- 参数配置、算法上下文创建、复制和释放。
+- 密钥生成、公私钥导入导出。
+- 整数向量的批编码与解码、公钥加密和私钥解密。
+- 密文加乘、重线性化、模切换、旋转和重随机化。
 
 ## 构建
 
@@ -56,6 +63,7 @@ cmake -S . -B build \
     -DHIFHE_BUILD_SHARED=ON \
     -DHIFHE_BUILD_STATIC=ON \
     -DHIFHE_CKKS=ON \
+    -DHIFHE_BGV=ON \
     -DHIFHE_ENABLE_ASAN=OFF \
     -DHIFHE_ENABLE_GCOV=OFF
 cmake --build build --parallel
@@ -70,18 +78,21 @@ CMake 配置：
 | `HIFHE_BUILD_SHARED` | `ON` | 生成 `libhifhe_provider.so` |
 | `HIFHE_BUILD_STATIC` | `ON` | 生成 `libhifhe_provider.a` |
 | `HIFHE_CKKS` | `ON` | 将 CKKS 编译进 provider |
+| `HIFHE_BGV` | `ON` | 将 BGV 编译进 provider |
 | `HIFHE_ENABLE_ASAN` | `OFF` | 启用 AddressSanitizer |
 | `HIFHE_ENABLE_GCOV` | `OFF` | 启用覆盖率 |
 
-至少启用一种库类型。两种 CKKS 裁剪方式：
+至少启用一种库类型。CKKS 和 BGV 均支持按算法裁剪：
 
 ```sh
 bash testcode/script/build_hifhe.sh --enable ckks
 bash testcode/script/build_hifhe.sh --disable ckks
+bash testcode/script/build_hifhe.sh --enable bgv
+bash testcode/script/build_hifhe.sh --disable bgv
 ```
 
-`HIFHE_CKKS=OFF` 会排除全部 CKKS 源码，并将结果写入生成的
-`build/include/hifhe_config.h`。
+`HIFHE_CKKS=OFF` 或 `HIFHE_BGV=OFF` 会排除对应算法源码，并将结果
+写入生成的 `build/include/hifhe_config.h`。
 
 安装命令：`cmake --install build --prefix /path/to/prefix`。
 

@@ -1,7 +1,7 @@
 # HiFHE
 
 HiFHE is a homomorphic-encryption provider library for openHiTLS. It currently
-provides CKKS.
+provides CKKS and BGV.
 
 ## Features
 
@@ -15,7 +15,7 @@ provides CKKS.
 
 ### 2. Currently supported algorithms and capabilities
 
-CKKS is currently supported:
+#### CKKS
 
 - Parameter configuration and algorithm context creation, duplication, and cleanup.
 - Key generation and public/private key import/export.
@@ -25,6 +25,15 @@ CKKS is currently supported:
 
 Interfaces for homomorphic ciphertext addition, multiplication, rotation,
 rescaling, and bootstrapping are not yet available.
+
+#### BGV
+
+- Parameter configuration and algorithm context creation, duplication, and cleanup.
+- Key generation and public/private key import/export.
+- Packed encoding and decoding of integer vectors, public-key encryption, and
+  private-key decryption.
+- Homomorphic addition and multiplication, relinearization, modulus switching,
+  rotation, and rerandomization.
 
 ## Build
 
@@ -60,6 +69,7 @@ cmake -S . -B build \
     -DHIFHE_BUILD_SHARED=ON \
     -DHIFHE_BUILD_STATIC=ON \
     -DHIFHE_CKKS=ON \
+    -DHIFHE_BGV=ON \
     -DHIFHE_ENABLE_ASAN=OFF \
     -DHIFHE_ENABLE_GCOV=OFF
 cmake --build build --parallel
@@ -74,18 +84,22 @@ CMake options:
 | `HIFHE_BUILD_SHARED` | `ON` | Build `libhifhe_provider.so` |
 | `HIFHE_BUILD_STATIC` | `ON` | Build `libhifhe_provider.a` |
 | `HIFHE_CKKS` | `ON` | Compile CKKS into the provider |
+| `HIFHE_BGV` | `ON` | Compile BGV into the provider |
 | `HIFHE_ENABLE_ASAN` | `OFF` | Enable AddressSanitizer |
 | `HIFHE_ENABLE_GCOV` | `OFF` | Enable coverage |
 
-At least one library type must be enabled. Trim CKKS with either interface:
+At least one library type must be enabled. CKKS and BGV can be selected
+independently:
 
 ```sh
 bash testcode/script/build_hifhe.sh --enable ckks
 bash testcode/script/build_hifhe.sh --disable ckks
+bash testcode/script/build_hifhe.sh --enable bgv
+bash testcode/script/build_hifhe.sh --disable bgv
 ```
 
-`HIFHE_CKKS=OFF` excludes all CKKS sources and records the result in the
-generated `build/include/hifhe_config.h`.
+`HIFHE_CKKS=OFF` or `HIFHE_BGV=OFF` excludes the corresponding sources and
+records the result in the generated `build/include/hifhe_config.h`.
 
 Install with `cmake --install build --prefix /path/to/prefix`.
 
