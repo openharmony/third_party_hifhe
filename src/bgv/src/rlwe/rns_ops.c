@@ -22,6 +22,33 @@
 #include "kernel/ntt.h"
 #include "rlwe/rlwe_context.h"
 
+/* ---------------- lifecycle ---------------- */
+
+HIFHE_ERROR RLWE_RnsPoly_Create(RnsPoly *out, const RnsPolyConfig *cfg, RlweContext *ctx)
+{
+    if (out == NULL || cfg == NULL || ctx == NULL) return HIFHE_NULL_INPUT;
+    memset(out, 0, sizeof(*out));
+    out->config   = *cfg;
+    out->context  = ctx;
+    out->dataSize = ctx->parameter->polyDegree;
+    out->data     = (uint64_t *)BSL_SAL_Calloc(out->dataSize, (uint32_t)sizeof(uint64_t));
+    if (out->data == NULL) return HIFHE_MEMORY_ERROR;
+    out->ownsData = 1u;
+    return HIFHE_SUCCESS;
+}
+
+HIFHE_ERROR RLWE_RnsPoly_Destroy(RnsPoly *self)
+{
+    if (self == NULL) return HIFHE_NULL_INPUT;
+    if (self->ownsData && self->data != NULL) {
+        BSL_SAL_Free(self->data);
+    }
+    self->data     = NULL;
+    self->dataSize = 0u;
+    self->ownsData = 0u;
+    return HIFHE_SUCCESS;
+}
+
 /* ---------------- pointwise arithmetic ---------------- */
 
 static HIFHE_ERROR CheckShape(const RnsPoly *a, const RnsPoly *b)

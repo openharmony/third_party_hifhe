@@ -56,7 +56,10 @@ static HIFHE_ERROR SampleUniformCrtNtt(CrtPoly *out, BGVContext *ctx,
     for (uint32_t i = 0; i < out->config.rnsbase.size; ++i) {
         Modulus q = out->config.rnsbase.data[i];
         r = Kernel_Sampler_UniformModQ(out->data + i * N, N, q, i, src);
-        if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(out); return r; }
+        if (r != HIFHE_SUCCESS) {
+            RLWE_CrtPoly_Destroy(out);
+            return r;
+        }
     }
     return HIFHE_SUCCESS;
 }
@@ -69,15 +72,28 @@ static HIFHE_ERROR SampleSmallCrtNtt(CrtPoly *out, BGVContext *ctx,
     uint32_t N = ctx->rlweContext.parameter->polyDegree;
     Int64Vector scratch;
     r = Int64Vector_Create(&scratch, NULL, N);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(out);
+        return r;
+    }
     r = ternary ? Kernel_Sampler_Ternary(scratch.data, N, src)
                 : Kernel_Sampler_CBD(scratch.data, N, 2u, src);
-    if (r != HIFHE_SUCCESS) { Int64Vector_Cleanse(&scratch); RLWE_CrtPoly_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        Int64Vector_Cleanse(&scratch);
+        RLWE_CrtPoly_Destroy(out);
+        return r;
+    }
     r = RLWE_CrtPoly_SetSigned(out, scratch.data);
     Int64Vector_Cleanse(&scratch);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(out);
+        return r;
+    }
     r = RLWE_CrtPoly_ToNtt(out);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(out);
+        return r;
+    }
     return HIFHE_SUCCESS;
 }
 
@@ -164,9 +180,16 @@ HIFHE_ERROR BGV_Encryptor_EncryptZeroSymmetric(Ciphertext *out, const SecretKey 
                                              &sk->config.crtConfig, &self->context->rlweContext);
     if (r != HIFHE_SUCCESS) return r;
     r = SampleUniformCrtNtt(&a, self->context, &src);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&sk_view); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&sk_view);
+        return r;
+    }
     r = SampleSmallCrtNtt(&e, self->context, &src, false);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&a); RLWE_CrtPoly_Destroy(&sk_view); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&a);
+        RLWE_CrtPoly_Destroy(&sk_view);
+        return r;
+    }
     r = SymCoreFromAE(out, &a, &e, &sk_view, self->context);
     RLWE_CrtPoly_Destroy(&a);
     RLWE_CrtPoly_Destroy(&e);
@@ -213,9 +236,16 @@ HIFHE_ERROR BGV_Encryptor_EncryptZeroAsymmetric(Ciphertext *out, const PublicKey
     int32_t r = SampleSmallCrtNtt(&u,  self->context, &src, true);
     if (r != HIFHE_SUCCESS) return r;
     r = SampleSmallCrtNtt(&e0, self->context, &src, false);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&u); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&u);
+        return r;
+    }
     r = SampleSmallCrtNtt(&e1, self->context, &src, false);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&u); RLWE_CrtPoly_Destroy(&e0); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&u);
+        RLWE_CrtPoly_Destroy(&e0);
+        return r;
+    }
     r = BGV_Ciphertext_GetCrtPolyAt(&pk0, 0u, pk); if (r != HIFHE_SUCCESS) goto done;
     r = BGV_Ciphertext_GetCrtPolyAt(&pk1, 1u, pk); if (r != HIFHE_SUCCESS) goto done;
     r = AsymCoreFromNoise(out, &pk0, &pk1, &u, &e0, &e1, self->context);
@@ -258,7 +288,10 @@ HIFHE_ERROR BGV_Encryptor_EncryptSymmetric(Ciphertext *out, const Plaintext *pt,
     int32_t r = BGV_Encryptor_EncryptZeroSymmetric(out, self->sk, self);
     if (r != HIFHE_SUCCESS) return r;
     r = AddPtToC0(out, pt);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(out);
+        return r;
+    }
     return HIFHE_SUCCESS;
 }
 
@@ -269,7 +302,10 @@ HIFHE_ERROR BGV_Encryptor_EncryptAsymmetric(Ciphertext *out, const Plaintext *pt
     int32_t r = BGV_Encryptor_EncryptZeroAsymmetric(out, self->pk, self);
     if (r != HIFHE_SUCCESS) return r;
     r = AddPtToC0(out, pt);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(out);
+        return r;
+    }
     return HIFHE_SUCCESS;
 }
 
@@ -294,6 +330,12 @@ HIFHE_ERROR BGV_Encryptor_Decrypt(Plaintext *out, const Ciphertext *ct, const En
     uint32_t L = ct->config.crtConfig.rnsbase.size;
     uint32_t sz = ct->config.ciphertextSize;
     if (sz < 2u) return HIFHE_CT_DEGREE_MISMATCH;
+    /* Both operands are multiplied as NTT values below. A coefficient-form
+     * input would decrypt to nonsense and still report success. */
+    if (ct->config.crtConfig.dtype != HIFHE_NTT ||
+        self->sk->config.crtConfig.dtype != HIFHE_NTT) {
+        return HIFHE_PARAM_INVALID;
+    }
 
     /* The plaintext inherits the ciphertext's RNS base, scale factor and
      * capability bits. */
@@ -325,7 +367,10 @@ HIFHE_ERROR BGV_Encryptor_Decrypt(Plaintext *out, const Ciphertext *ct, const En
     for (uint32_t k = 2u; k < sz; ++k) {
         CrtPoly skPow;
         rc = BGV_SecretKey_GetPow(&skPow, self->sk, k);
-        if (rc != HIFHE_SUCCESS) { BGV_Plaintext_Destroy(out); return rc; }
+        if (rc != HIFHE_SUCCESS) {
+            BGV_Plaintext_Destroy(out);
+            return rc;
+        }
         for (uint32_t i = 0; i < L; ++i) {
             Modulus q = ct->config.crtConfig.rnsbase.data[i];
             const uint64_t *ck = ct->data + (k * L + i) * N;

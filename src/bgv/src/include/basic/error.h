@@ -32,12 +32,31 @@ extern "C" {
 
 /* Early-return helpers. DO NOT depend on openhitls'
  * GOTO_ERR_IF from crypt_utils.h */
-#define HIFHE_RETURN_IF(cond, ret)      do { if (cond) { return (ret); } } while (0)
-#define HIFHE_RETURN_IF_ERR(expr)       do { int32_t _r = (expr); if (_r != HIFHE_SUCCESS) { return _r; } } while (0)
+#define HIFHE_RETURN_IF(cond, ret) \
+    do {                           \
+        if (cond) {                \
+            return (ret);          \
+        }                          \
+    } while (0)
+#define HIFHE_RETURN_IF_ERR(expr)  \
+    do {                           \
+        int32_t _r = (expr);       \
+        if (_r != HIFHE_SUCCESS) { \
+            return _r;             \
+        }                          \
+    } while (0)
 #define HIFHE_GOTO_ERR(retVar, errCode, label) \
-    do { (retVar) = (errCode); goto label; } while (0)
+    do {                                       \
+        (retVar) = (errCode);                  \
+        goto label;                            \
+    } while (0)
 #define HIFHE_GOTO_ERR_IF(cond, retVar, errCode, label) \
-    do { if (cond) { (retVar) = (errCode); goto label; } } while (0)
+    do {                                                \
+        if (cond) {                                     \
+            (retVar) = (errCode);                       \
+            goto label;                                 \
+        }                                               \
+    } while (0)
 
 #ifdef __cplusplus
 }

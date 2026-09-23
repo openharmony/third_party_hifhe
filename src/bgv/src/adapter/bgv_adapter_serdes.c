@@ -253,7 +253,10 @@ static HIFHE_ERROR ReadPtBody(const uint8_t *buf, uint32_t bufLen, uint32_t *off
 
     DomainFactors f;
     r = DomainFactors_Init(&f, &cfg.crtConfig.rnsbase, cfg.crtConfig.dtype);
-    if (r != HIFHE_SUCCESS) { BGV_PlaintextConfig_Destroy(&cfg); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_PlaintextConfig_Destroy(&cfg);
+        return r;
+    }
 
     BGV_Plaintext_Destroy(pt);
     r = BGV_Plaintext_Create(pt, &cfg, ctx);
@@ -261,7 +264,10 @@ static HIFHE_ERROR ReadPtBody(const uint8_t *buf, uint32_t bufLen, uint32_t *off
     if (r != HIFHE_SUCCESS) return r;
 
     uint32_t want = pt->dataSize * (uint32_t)sizeof(uint64_t);
-    if (bufLen - *off < want) { BGV_Plaintext_Destroy(pt); return HIFHE_SERDES_FAIL; }
+    if (bufLen - *off < want) {
+        BGV_Plaintext_Destroy(pt);
+        return HIFHE_SERDES_FAIL;
+    }
     for (uint32_t i = 0; i < rns; ++i) {
         uint64_t *slice = pt->data + i * N;
         for (uint32_t j = 0; j < N; ++j) {
@@ -382,7 +388,10 @@ static HIFHE_ERROR ReadCtBody(const uint8_t *buf, uint32_t bufLen, uint32_t *off
 
     DomainFactors f;
     r = DomainFactors_Init(&f, &cfg.crtConfig.rnsbase, cfg.crtConfig.dtype);
-    if (r != HIFHE_SUCCESS) { BGV_CiphertextConfig_Destroy(&cfg); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_CiphertextConfig_Destroy(&cfg);
+        return r;
+    }
 
     BGV_Ciphertext_Destroy(ct);
     r = BGV_Ciphertext_Create(ct, &cfg, ctx);
@@ -390,7 +399,10 @@ static HIFHE_ERROR ReadCtBody(const uint8_t *buf, uint32_t bufLen, uint32_t *off
     if (r != HIFHE_SUCCESS) return r;
 
     uint32_t want = ct->dataSize * (uint32_t)sizeof(uint64_t);
-    if (bufLen - *off < want) { BGV_Ciphertext_Destroy(ct); return HIFHE_SERDES_FAIL; }
+    if (bufLen - *off < want) {
+        BGV_Ciphertext_Destroy(ct);
+        return HIFHE_SERDES_FAIL;
+    }
     for (uint32_t k = 0; k < sz; ++k) {
         for (uint32_t i = 0; i < rns; ++i) {
             uint64_t *slice = ct->data + (k * rns + i) * N;
@@ -409,7 +421,10 @@ static int32_t DumpPtTyped(const Plaintext *pt, uint8_t *buf, uint32_t *bufLen,
 {
     if (pt == NULL || bufLen == NULL) return HIFHE_NULL_INPUT;
     uint32_t need = BgvSerDes_PlaintextSize(pt);
-    if (buf == NULL || *bufLen < need) { *bufLen = need; return HIFHE_BUFFER_TOO_SMALL; }
+    if (buf == NULL || *bufLen < need) {
+        *bufLen = need;
+        return HIFHE_BUFFER_TOO_SMALL;
+    }
     uint32_t off = 0u;
     int32_t r = WriteHeader(buf, *bufLen, algId, type, &off);
     if (r != HIFHE_SUCCESS) return r;
@@ -424,7 +439,10 @@ static int32_t DumpCtTyped(const Ciphertext *ct, uint8_t *buf, uint32_t *bufLen,
 {
     if (ct == NULL || bufLen == NULL) return HIFHE_NULL_INPUT;
     uint32_t need = BgvSerDes_CiphertextSize(ct);
-    if (buf == NULL || *bufLen < need) { *bufLen = need; return HIFHE_BUFFER_TOO_SMALL; }
+    if (buf == NULL || *bufLen < need) {
+        *bufLen = need;
+        return HIFHE_BUFFER_TOO_SMALL;
+    }
     uint32_t off = 0u;
     int32_t r = WriteHeader(buf, *bufLen, algId, type, &off);
     if (r != HIFHE_SUCCESS) return r;

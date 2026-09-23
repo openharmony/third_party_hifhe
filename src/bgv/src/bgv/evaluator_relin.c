@@ -45,6 +45,9 @@ HIFHE_ERROR BGV_Evaluator_Relinearize(Ciphertext *out, const Ciphertext *in,
     int32_t r = BGV_Ciphertext_CreateSize2Ntt(out, in->config.correctionFactor,
                                               &in->config.crtConfig.rnsbase, ctx);
     if (r != HIFHE_SUCCESS) return r;
+    /* The constructor zeroes caps; decode picks its layout from them, and
+     * every other transform carries them across. */
+    out->config.caps = in->config.caps;
 
     /* View c2 as a CrtPoly and run the key switch. */
     CrtPoly c2;
@@ -58,7 +61,10 @@ HIFHE_ERROR BGV_Evaluator_Relinearize(Ciphertext *out, const Ciphertext *in,
 
     r = BGV_KeySwitch_Run(&delta, &c2, self->relinKeys->pieces,
                           self->relinKeys->rnsSize, self->relinKeys->digits, ctx);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&delta); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&delta);
+        return r;
+    }
 
     /* out = (c0 + delta.c0, c1 + delta.c1). `in` is size 3, delta size 2. */
     for (uint32_t k = 0; k < 2u && r == HIFHE_SUCCESS; ++k) {

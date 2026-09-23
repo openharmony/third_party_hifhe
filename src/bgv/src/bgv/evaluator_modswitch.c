@@ -66,9 +66,15 @@ HIFHE_ERROR BGV_Evaluator_ModSwitch(Ciphertext *out, const Ciphertext *in,
     for (uint32_t k = 0; k < K; ++k) {
         CrtPoly comp;
         r = BGV_Ciphertext_GetCrtPolyAt(&comp, k, &work);
-        if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&work); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_Ciphertext_Destroy(&work);
+            return r;
+        }
         r = RLWE_CrtPoly_ToPoly(&comp);
-        if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&work); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_Ciphertext_Destroy(&work);
+            return r;
+        }
     }
 
     /* Output on the truncated chain, in coefficient form. */
@@ -76,13 +82,19 @@ HIFHE_ERROR BGV_Evaluator_ModSwitch(Ciphertext *out, const Ciphertext *in,
     RnsBase outBase;
     memset(&outBase, 0, sizeof(outBase));
     r = Uint64Vector_Create(&outBase, chain, outL);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&work); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&work);
+        return r;
+    }
 
     CiphertextConfig cfg;
     uint64_t newFactor = Kernel_MulMod(in->config.correctionFactor % t, invQLastModT, t);
     r = BGV_CiphertextConfig_Create(&cfg, K, newFactor, &outBase);
     Uint64Vector_Destroy(&outBase);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&work); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&work);
+        return r;
+    }
     cfg.crtConfig.dtype = HIFHE_POLY;
     cfg.caps            = in->config.caps;
     memcpy(cfg.seed, in->config.seed, sizeof(cfg.seed));
@@ -90,7 +102,10 @@ HIFHE_ERROR BGV_Evaluator_ModSwitch(Ciphertext *out, const Ciphertext *in,
     BGV_Ciphertext_Destroy(out);
     r = BGV_Ciphertext_Create(out, &cfg, ctx);
     BGV_CiphertextConfig_Destroy(&cfg);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&work); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&work);
+        return r;
+    }
 
     uint64_t halfQLast = qLast >> 1;
     for (uint32_t k = 0; k < K; ++k) {
@@ -111,8 +126,14 @@ HIFHE_ERROR BGV_Evaluator_ModSwitch(Ciphertext *out, const Ciphertext *in,
                 /* Centre u so |delta| stays small. */
                 uint64_t mag;
                 bool negative;
-                if (u > halfQLast) { mag = qLast - u; negative = true; }
-                else               { mag = u;         negative = false; }
+                if (u > halfQLast) {
+                    mag = qLast - u;
+                    negative = true;
+                }
+                else {
+                    mag = u;
+                    negative = false;
+                }
                 uint64_t deltaModQi = Kernel_MulMod(mag % qi, tModQi, qi);
                 if (negative && deltaModQi != 0u) deltaModQi = qi - deltaModQi;
                 uint64_t diff = src[j] + qi - deltaModQi;
@@ -127,9 +148,15 @@ HIFHE_ERROR BGV_Evaluator_ModSwitch(Ciphertext *out, const Ciphertext *in,
     for (uint32_t k = 0; k < K; ++k) {
         CrtPoly comp;
         r = BGV_Ciphertext_GetCrtPolyAt(&comp, k, out);
-        if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_Ciphertext_Destroy(out);
+            return r;
+        }
         r = RLWE_CrtPoly_ToNtt(&comp);
-        if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_Ciphertext_Destroy(out);
+            return r;
+        }
     }
     out->config.crtConfig.dtype = HIFHE_NTT;
     return HIFHE_SUCCESS;

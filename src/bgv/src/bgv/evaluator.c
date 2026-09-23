@@ -106,8 +106,14 @@ static HIFHE_ERROR BGV_Evaluator_MakeScaleFactorSame(bool *isFirstEle, uint64_t 
     uint64_t absX1 = (x1 > half) ? (ptMod - x1) : x1;
     uint64_t absX2 = (x2 > half) ? (ptMod - x2) : x2;
 
-    if (absX1 < absX2) { *isFirstEle = true;  *x = x1; }
-    else               { *isFirstEle = false; *x = x2; }
+    if (absX1 < absX2) {
+        *isFirstEle = true;
+        *x = x1;
+    }
+    else {
+        *isFirstEle = false;
+        *x = x2;
+    }
     return HIFHE_SUCCESS;
 }
 
@@ -156,7 +162,10 @@ HIFHE_ERROR BGV_Evaluator_AddCtCt(Ciphertext *out, const Ciphertext *a, const Ci
     r = EnsureOutShape(dst, plain, a->config.ciphertextSize);
     if (r == HIFHE_SUCCESS) r = BGV_Ciphertext_MulScalar(dst, scaled, x);
     if (r == HIFHE_SUCCESS) r = BGV_Ciphertext_Add(dst, dst, plain);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&tmp); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&tmp);
+        return r;
+    }
 
     dst->config.correctionFactor = plain->config.correctionFactor;
     if (dst == &tmp) {

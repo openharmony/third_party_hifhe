@@ -123,7 +123,10 @@ HIFHE_ERROR Kernel_Prime_FindProth(Modulus *out,
 
         bool skip = false;
         for (uint32_t i = 0; i < avoidLen; ++i) {
-            if (avoid[i] == cand) { skip = true; break; }
+            if (avoid[i] == cand) {
+                skip = true;
+                break;
+            }
         }
         if (skip) continue;
         if (!IsPrimeU64(cand)) continue;

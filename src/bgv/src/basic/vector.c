@@ -27,6 +27,10 @@ HIFHE_ERROR Name##_Create(Name *v, const T *data, uint32_t size)              \
     v->size = 0u;                                                             \
     v->data = NULL;                                                           \
     if (size == 0u) return HIFHE_SUCCESS;                                     \
+    /* The allocation below is sized in uint32 while the fill counts in       \
+     * size_t, so a larger count wraps the allocation and the fill runs off   \
+     * the end of it. */                                                      \
+    if (size > UINT32_MAX / (uint32_t)sizeof(T)) return HIFHE_PARAM_INVALID;  \
     v->data = (T *)BSL_SAL_Malloc(size * (uint32_t)sizeof(T));                \
     if (v->data == NULL) return HIFHE_MEMORY_ERROR;                           \
     v->size = size;                                                           \

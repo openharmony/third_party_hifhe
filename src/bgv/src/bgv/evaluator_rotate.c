@@ -91,11 +91,17 @@ static HIFHE_ERROR PermuteComponent(uint64_t *comp, uint64_t k, BGVContext *ctx)
     Uint64Vector_Destroy(&cfg.rnsbase);
     if (r != HIFHE_SUCCESS) return r;
     r = RLWE_CrtPoly_ToPoly(&view);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&view); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&view);
+        return r;
+    }
 
     Uint64Vector scratch;
     r = Uint64Vector_Create(&scratch, NULL, N);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&view); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&view);
+        return r;
+    }
     for (uint32_t i = 0; i < L; ++i) {
         Modulus q = ctx->rlweContext.cipherRnsBase.data[i];
         memcpy(scratch.data, comp + i * N, N * sizeof(uint64_t));
@@ -130,21 +136,34 @@ HIFHE_ERROR BGV_Evaluator_RotateByElt(Ciphertext *out, const Ciphertext *in,
     if (r != HIFHE_SUCCESS) return r;
     for (uint32_t k = 0; k < 2u; ++k) {
         r = PermuteComponent(out->data + k * L * N, galoisElt, ctx);
-        if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+        if (r != HIFHE_SUCCESS) {
+            BGV_Ciphertext_Destroy(out);
+            return r;
+        }
     }
 
     /* Key-switch the (permuted) c1 back under s. */
     CrtPoly c1;
     r = BGV_Ciphertext_GetCrtPolyAt(&c1, 1u, out);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(out);
+        return r;
+    }
 
     Ciphertext delta;
     r = BGV_Ciphertext_CreateSize2Ntt(&delta, out->config.correctionFactor,
                                       &out->config.crtConfig.rnsbase, ctx);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(out);
+        return r;
+    }
 
     r = BGV_KeySwitch_Run(&delta, &c1, gk->pieces, gk->rnsSize, gk->digits, ctx);
-    if (r != HIFHE_SUCCESS) { BGV_Ciphertext_Destroy(&delta); BGV_Ciphertext_Destroy(out); return r; }
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(&delta);
+        BGV_Ciphertext_Destroy(out);
+        return r;
+    }
 
     /* out.c0 <- out.c0 + delta.c0;  out.c1 <- delta.c1  (replace, not add) */
     CrtPoly d0, d1;

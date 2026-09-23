@@ -112,13 +112,19 @@ HIFHE_ERROR BGV_KeySwitch_Run(Ciphertext *out, const CrtPoly *polyNtt,
     int32_t r = RLWE_CrtPoly_Copy(&polyCoeff, polyNtt);
     if (r != HIFHE_SUCCESS) return r;
     r = RLWE_CrtPoly_ToPoly(&polyCoeff);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&polyCoeff); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&polyCoeff);
+        return r;
+    }
 
     /* Reusable digit polynomial over the whole chain. */
     CrtPoly digitPoly;
     memset(&digitPoly, 0, sizeof(digitPoly));
     r = RLWE_CrtPoly_Copy(&digitPoly, &polyCoeff);
-    if (r != HIFHE_SUCCESS) { RLWE_CrtPoly_Destroy(&polyCoeff); return r; }
+    if (r != HIFHE_SUCCESS) {
+        RLWE_CrtPoly_Destroy(&polyCoeff);
+        return r;
+    }
 
     Uint64Vector lifted;
     r = Uint64Vector_Create(&lifted, NULL, N);
@@ -131,7 +137,10 @@ HIFHE_ERROR BGV_KeySwitch_Run(Ciphertext *out, const CrtPoly *polyNtt,
 
     for (uint32_t i = 0; i < L && r == HIFHE_SUCCESS; ++i) {
         uint64_t qhatInv = QHatInvModQi(base, i);
-        if (qhatInv == 0u && L > 1u) { r = HIFHE_INTERNAL; break; }
+        if (qhatInv == 0u && L > 1u) {
+            r = HIFHE_INTERNAL;
+            break;
+        }
         RnsPoly srcLimb, yLimb;
         r = RLWE_CrtPoly_GetRnsPolyAt(&srcLimb, i, &polyCoeff);
         if (r != HIFHE_SUCCESS) break;

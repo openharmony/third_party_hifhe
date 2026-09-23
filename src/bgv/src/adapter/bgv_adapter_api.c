@@ -70,9 +70,12 @@ void CRYPT_BGV_FreeCtx(CRYPT_BGV_Ctx *ctx)
 CRYPT_BGV_Ctx *CRYPT_BGV_DupCtx(CRYPT_BGV_Ctx *src)
 {
     if (src == NULL) return NULL;
-    /* Also deep copy cached table */
     CRYPT_BGV_Ctx *dst = (CRYPT_BGV_Ctx *)CRYPT_BGV_NewCtx(src->algId);
     if (dst == NULL) return NULL;
+    /* Share the caller's cache handle rather than recomputing the tables: a
+     * duplicate carries identical parameters, which is what the cache
+     * contract asks for, and the handle outlives its contexts. */
+    dst->lutCache = src->lutCache;
     if (BgvUserPara_Copy(&dst->para, &src->para) != HIFHE_SUCCESS) {
         CRYPT_BGV_FreeCtx(dst);
         return NULL;
