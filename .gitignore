@@ -1,0 +1,6 @@
+build/
+cmake-build-*/
+platform/
+testcode/build/
+testcode/framework/gen_test/build/
+testcode/output/
