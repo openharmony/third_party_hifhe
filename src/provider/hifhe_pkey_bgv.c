@@ -10,7 +10,6 @@
  * See the Mulan PSL v2 for more details.
  */
 
-#include "hifhe_config.h"
 
 #ifdef HIFHE_BGV
 #include "crypt_bgv.h"
