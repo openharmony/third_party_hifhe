@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "HiFHE",
+    "License": "Mulan Permissive Software License，Version 2",
+    "License File": "LICENSE",
+    "Version Number": "0.3.0",
+    "Owner": "zhangxiaozan1@huawei.com",
+    "Upstream URL": "https://raw.gitcode.com/openHiTLS/HiFHE/archive/refs/heads/HiFHE-0.3.zip",
+    "Description": "HiFHE is a homomorphic-encryption provider library for openHiTLS. It currently provides CKKS and BGV."
+  }
+]
