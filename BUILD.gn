@@ -1,0 +1,125 @@
+# Copyright (c) 2026 openHiTLS. All Rights Reserved.
+# HiFHE is licensed under Mulan PSL v2.
+# You can use this software according to the terms and conditions of the Mulan PSL v2.
+# You may obtain a copy of Mulan PSL v2 at:
+#
+#     http://license.coscl.org.cn/MulanPSL2
+#
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+# EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+# MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+# See the Mulan PSL v2 for more details.
+
+import("//build/ohos.gni")
+
+# ---------------------------------------------------------------------------
+# Defines / include directories shared by every HiFHE translation unit.
+#
+# openHiTLS is compiled independently (third_party_openhitls) and is consumed
+# through external_deps. HiFHE only uses its published headers (include/bsl and
+# include/crypto), which are exposed by the openHiTLS targets' public configs,
+# so no openHiTLS internal directories are referenced here.
+# ---------------------------------------------------------------------------
+hifhe_defines = [ "HIFHE_BGV" ]
+
+hifhe_include_dirs = [
+    "include",
+    "src/provider",
+    "src/bgv/include",
+    "src/bgv/src",
+    "src/bgv/src/include",
+]
+
+# ---------------------------------------------------------------------------
+# Source lists.
+# ---------------------------------------------------------------------------
+hifhe_sources = [
+    "src/provider/hifhe_provider.c",
+    "src/provider/hifhe_pkey_bgv.c",
+    "src/bgv/src/adapter/bgv_adapter_api.c",
+    "src/bgv/src/adapter/bgv_adapter_core.c",
+    "src/bgv/src/adapter/bgv_adapter_ctrl.c",
+    "src/bgv/src/adapter/bgv_adapter_para.c",
+    "src/bgv/src/adapter/bgv_adapter_serdes.c",
+    "src/bgv/src/basic/context.c",
+    "src/bgv/src/basic/rand.c",
+    "src/bgv/src/basic/vector.c",
+    "src/bgv/src/kernel/modulus.c",
+    "src/bgv/src/kernel/ntt.c",
+    "src/bgv/src/kernel/prime.c",
+    "src/bgv/src/kernel/sampler.c",
+    "src/bgv/src/rlwe/crt_ops.c",
+    "src/bgv/src/rlwe/rlwe_context.c",
+    "src/bgv/src/rlwe/rns_ops.c",
+    "src/bgv/src/bgv/bgv_context.c",
+    "src/bgv/src/bgv/bgv_params.c",
+    "src/bgv/src/bgv/ciphertext.c",
+    "src/bgv/src/bgv/encoder.c",
+    "src/bgv/src/bgv/encryptor.c",
+    "src/bgv/src/bgv/evaluator.c",
+    "src/bgv/src/bgv/evaluator_modswitch.c",
+    "src/bgv/src/bgv/evaluator_mul_ctct.c",
+    "src/bgv/src/bgv/evaluator_relin.c",
+    "src/bgv/src/bgv/evaluator_rotate.c",
+    "src/bgv/src/bgv/keygen.c",
+    "src/bgv/src/bgv/keys.c",
+    "src/bgv/src/bgv/keyswitch.c",
+    "src/bgv/src/bgv/params_check.c",
+    "src/bgv/src/bgv/params_preset.c",
+    "src/bgv/src/bgv/plaintext.c",
+    "src/bgv/src/bgv/rerand.c",
+]
+
+# ---------------------------------------------------------------------------
+# Configs.
+# ---------------------------------------------------------------------------
+config("hifhe_private_config") {
+    include_dirs = hifhe_include_dirs
+    defines = hifhe_defines
+    cflags = [
+        "-fPIC",
+        # The provider is loaded at runtime through dlopen, keep its symbols
+        # visible even if the global build defaults to hidden visibility.
+        "-fvisibility=default",
+        "-Wno-int-conversion",
+    ]
+}
+
+config("hifhe_public_config") {
+    include_dirs = [
+        "include",
+        "src/bgv/include",
+    ]
+}
+
+# ---------------------------------------------------------------------------
+# Targets.
+# ---------------------------------------------------------------------------
+ohos_source_set("hifhe_source") {
+    subsystem_name = "thirdparty"
+    part_name = "hifhe"
+    sources = hifhe_sources
+    configs = [ ":hifhe_private_config" ]
+    # Pulls in the public headers of openHiTLS (include/bsl, include/crypto).
+    external_deps = [
+        "openhitls:openhitls_bsl",
+        "openhitls:openhitls_crypto",
+    ]
+}
+
+ohos_shared_library("libhifhe") {
+    subsystem_name = "thirdparty"
+    part_name = "hifhe"
+    sources = []
+    deps = [ ":hifhe_source" ]
+    external_deps = [
+        "openhitls:openhitls_bsl",
+        "openhitls:openhitls_crypto",
+    ]
+    public_configs = [ ":hifhe_public_config" ]
+    install_images = [
+        "system",
+        "updater",
+    ]
+}
+

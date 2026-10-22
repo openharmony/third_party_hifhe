@@ -16,7 +16,6 @@
 #ifndef HIFHE_BENCHMARK_REGISTRY_H
 #define HIFHE_BENCHMARK_REGISTRY_H
 
-#include "hifhe_config.h"
 
 typedef struct BenchCtx_ BenchCtx;
 

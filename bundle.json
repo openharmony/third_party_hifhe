@@ -1,0 +1,43 @@
+{
+    "name":"@ohos/hifhe",
+    "description":"HiFHE homomorphic-encryption provider for openHiTLS",
+    "version":"1.0",
+    "license":"MulanPSL-2.0",
+    "publishAs":"code-segment",
+    "segment": {
+        "destPath":"third_party/hifhe"
+    },
+    "dirs":{},
+    "scripts":{},
+    "readmePath":{
+        "en":"README.md"
+    },
+    "component":{
+        "name":"hifhe",
+        "subsystem":"thirdparty",
+        "syscap":[],
+        "features":[],
+        "adapted_system_type":[
+            "standard"
+        ],
+        "rom":"",
+        "ram":"",
+        "deps":{
+            "components":[
+                "openhitls"
+            ],
+            "third_party":[]
+        },
+        "build":{
+            "sub_component":[
+                "//third_party/hifhe:libhifhe"
+            ],
+            "inner_kits":[
+                {
+                    "name":"//third_party/hifhe:libhifhe"
+                }
+            ],
+            "test":[]
+        }
+    }
+}

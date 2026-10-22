@@ -14,7 +14,6 @@
 #define HIFHE_PROVIDER_IMPL_H
 
 #include "crypt_eal_provider.h"
-#include "hifhe_config.h"
 
 typedef struct {
     void *handle;
