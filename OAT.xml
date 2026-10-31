@@ -29,10 +29,12 @@
         <filefilterlist>
             <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
                 <filteritem type="filepath" name="testcode/.*" desc="test or certification binary"/>
+                <filteritem type="filepath" name="figures/.*" desc="image files"/>
             </filefilter>
             <filefilter name="binaryFileTypePolicyFilter" desc="Filters for binary file policies">
                 <filteritem type="filename" name="LICENSE" desc="LICENSE"/>
                 <filteritem type="filepath" name="testcode/.*" desc="test or certification binary"/>
+                <filteritem type="filepath" name="figures/.*" desc="image files"/>
             </filefilter>
         </filefilterlist>
     </oatconfig>
