@@ -155,7 +155,7 @@ external_deps += [ "hifhe:libhifhe" ]
 
 ![跨应用隐私数据检索流程图](figures/hifhe_flow.png)
 
-具体接口使用可参考[API开发指南]()。
+具体接口使用可参考[API开发指南](docs/HiFHE_API使用说明.md)。
 
 ## License
 
