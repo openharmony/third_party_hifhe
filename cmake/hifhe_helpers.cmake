@@ -13,6 +13,7 @@ set_property(GLOBAL PROPERTY HIFHE_OBJECT_TARGETS "")
 function(hifhe_add_object_library TARGET)
     add_library(${TARGET} OBJECT ${ARGN})
     set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_include_directories(${TARGET} PRIVATE ${PROJECT_SOURCE_DIR}/src/common)
     target_link_libraries(${TARGET} PRIVATE
         _hifhe_compile_options
         _hifhe_public_headers

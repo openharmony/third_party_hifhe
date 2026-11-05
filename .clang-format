@@ -78,6 +78,7 @@ ObjCSpaceAfterProperty: true
 ObjCSpaceBeforeProtocolList: true
 PointerAlignment: Right
 ReflowComments: false
+SeparateDefinitionBlocks: Always
 SortIncludes: false
 SortUsingDeclarations: false
 SpaceAfterCStyleCast: false

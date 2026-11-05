@@ -46,7 +46,7 @@ extern "C" {
 #endif
 
 #define TEST_RESULT_SUCCEED 0
-#define TEST_RESULT_FAILED 1
+#define TEST_RESULT_FAILED  1
 #define TEST_RESULT_SKIPPED 2
 
 typedef struct {
@@ -55,25 +55,25 @@ typedef struct {
     char filename[256];
 } TestInfo;
 
-#define TRUE_OR_EXIT(TEST)                  \
-    do {                                    \
-        if (!(TEST)) {                      \
-            goto EXIT;                      \
-        }                                   \
+#define TRUE_OR_EXIT(TEST) \
+    do {                   \
+        if (!(TEST)) {     \
+            goto EXIT;     \
+        }                  \
     } while (0)
 
-#define TRUE_OR_ABRT(TEST)                  \
-    do {                                    \
-        if (!(TEST)) {                      \
-            raise(SIGABRT);                 \
-        }                                   \
+#define TRUE_OR_ABRT(TEST)  \
+    do {                    \
+        if (!(TEST)) {      \
+            raise(SIGABRT); \
+        }                   \
     } while (0)
 
-#define PRINT_ABRT(TEST)                    \
-    do {                                    \
-        if (!(TEST)) {                      \
-            goto ABORT;                      \
-        }                                   \
+#define PRINT_ABRT(TEST) \
+    do {                 \
+        if (!(TEST)) {   \
+            goto ABORT;  \
+        }                \
     } while (0)
 
 #define ASSERT_TRUE(TEST)                   \
@@ -84,48 +84,48 @@ typedef struct {
         }                                   \
     } while (0)
 
-#define ASSERT_EQ(VALUE1, VALUE2)                       \
-    do {                                                \
-        int64_t value1__ = (int64_t)(VALUE1);           \
-        int64_t value2__ = (int64_t)(VALUE2);           \
-        if (value1__ != value2__) {                     \
-            RecordFailure(#VALUE1 #VALUE2, __FILE__);   \
+#define ASSERT_EQ(VALUE1, VALUE2)                                                                        \
+    do {                                                                                                 \
+        int64_t value1__ = (int64_t)(VALUE1);                                                            \
+        int64_t value2__ = (int64_t)(VALUE2);                                                            \
+        if (value1__ != value2__) {                                                                      \
+            RecordFailure(#VALUE1 #VALUE2, __FILE__);                                                    \
             Print("\nvalue is %d (0x%x).\nexpect %d (0x%x).\n", value1__, value1__, value2__, value2__); \
-            goto EXIT;                                  \
-        }                                               \
+            goto EXIT;                                                                                   \
+        }                                                                                                \
     } while (0)
 
-#define ASSERT_LT(VALUE1, VALUE2)                       \
-    do {                                                \
-        int64_t value1__ = (int64_t)(VALUE1);           \
-        int64_t value2__ = (int64_t)(VALUE2);           \
-        if (!(value1__ < value2__)) {                     \
-            RecordFailure(#VALUE1 #VALUE2, __FILE__);   \
+#define ASSERT_LT(VALUE1, VALUE2)                                                                        \
+    do {                                                                                                 \
+        int64_t value1__ = (int64_t)(VALUE1);                                                            \
+        int64_t value2__ = (int64_t)(VALUE2);                                                            \
+        if (!(value1__ < value2__)) {                                                                    \
+            RecordFailure(#VALUE1 #VALUE2, __FILE__);                                                    \
             Print("\nvalue is %d (0x%x).\nexpect %d (0x%x).\n", value1__, value1__, value2__, value2__); \
-            goto EXIT;                                  \
-        }                                               \
+            goto EXIT;                                                                                   \
+        }                                                                                                \
     } while (0)
 
-#define ASSERT_EQ_LOG(LOG, VALUE1, VALUE2)              \
-    do {                                                \
-        int64_t value1__ = (int64_t)(VALUE1);           \
-        int64_t value2__ = (int64_t)(VALUE2);           \
-        if (value1__ != value2__) {                     \
-            RecordFailure(LOG, __FILE__);   \
+#define ASSERT_EQ_LOG(LOG, VALUE1, VALUE2)                                                               \
+    do {                                                                                                 \
+        int64_t value1__ = (int64_t)(VALUE1);                                                            \
+        int64_t value2__ = (int64_t)(VALUE2);                                                            \
+        if (value1__ != value2__) {                                                                      \
+            RecordFailure(LOG, __FILE__);                                                                \
             Print("\nvalue is %d (0x%x).\nexpect %d (0x%x).\n", value1__, value1__, value2__, value2__); \
-            goto EXIT;                                  \
-        }                                               \
+            goto EXIT;                                                                                   \
+        }                                                                                                \
     } while (0)
 
-#define ASSERT_NE(VALUE1, VALUE2)                       \
-    do {                                                \
-        int64_t value1__ = (int64_t)(VALUE1);           \
-        int64_t value2__ = (int64_t)(VALUE2);           \
-        if (value1__ == value2__) {                     \
-            RecordFailure(#VALUE1#VALUE2, __FILE__);    \
+#define ASSERT_NE(VALUE1, VALUE2)                                           \
+    do {                                                                    \
+        int64_t value1__ = (int64_t)(VALUE1);                               \
+        int64_t value2__ = (int64_t)(VALUE2);                               \
+        if (value1__ == value2__) {                                         \
+            RecordFailure(#VALUE1 #VALUE2, __FILE__);                       \
             Print("\nvalue is the same: %d (0x%x).\n", value1__, value2__); \
-            goto EXIT;                                  \
-        }                                               \
+            goto EXIT;                                                      \
+        }                                                                   \
     } while (0)
 
 #define ASSERT_TRUE_AND_LOG(LOG, TEST)    \
@@ -147,7 +147,7 @@ typedef struct {
     } while (0)
 
 #define SKIP_TEST()         \
-    do {\
+    do {                    \
         SkipTest(__FILE__); \
         return;             \
     } while (0)
@@ -155,9 +155,15 @@ typedef struct {
 extern int *GetJmpAddress(void);
 #ifndef TEST_NO_SUBPROC
 #define SUB_PROC 1
-#define SUB_PROC_BEGIN(parentAction)   if (fork() > 0) parentAction
-#define SUB_PROC_END() *GetJmpAddress() = SUB_PROC; return
-#define SUB_PROC_WAIT(times) for (uint16_t i = 0; i < times; i++) wait(NULL)
+#define SUB_PROC_BEGIN(parentAction) \
+    if (fork() > 0)                  \
+    parentAction
+#define SUB_PROC_END()           \
+    *GetJmpAddress() = SUB_PROC; \
+    return
+#define SUB_PROC_WAIT(times)             \
+    for (uint16_t i = 0; i < times; i++) \
+    wait(NULL)
 #else
 #define SUB_PROC 0
 #define SUB_PROC_BEGIN(parentAction)

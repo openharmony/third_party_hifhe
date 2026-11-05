@@ -40,41 +40,41 @@ extern "C" {
 
 /* Buffer layout for one modulus: four arrays of polyDegree (roots, invRoots,
  * rootsQuot, invRootsQuot) followed by the scalars nInvModQ and nInvQuot. */
-#define HIFHE_NTT_TABLE_ARRAYS 4u
+#define HIFHE_NTT_TABLE_ARRAYS            4u
 #define HIFHE_NTT_TABLE_WORDS(polyDegree) ((size_t)(polyDegree) * HIFHE_NTT_TABLE_ARRAYS + 2u)
 
 /* roots and invRoots are in bit-reversed order. The Quot arrays hold the
  * matching Shoup quotients. nInvModQ is N^-1 mod q, applied in the last
  * inverse layer. */
 typedef struct {
-    Modulus  q;
-    uint32_t polyDegree;   /* N (power of two) */
-    uint32_t logN;         /* log2(N) */
-    const uint64_t *roots;         /* size N: bit-reversed forward twiddles */
-    const uint64_t *invRoots;      /* size N: bit-reversed inverse twiddles */
-    const uint64_t *rootsQuot;     /* size N: floor(roots[k] * 2^64 / q) */
-    const uint64_t *invRootsQuot;  /* size N: floor(invRoots[k] * 2^64 / q) */
-    uint64_t  nInvModQ;
-    uint64_t  nInvQuot;    /* Shoup quotient for nInvModQ */
-    BarrettConst  barrett;
+    Modulus q;
+    uint32_t polyDegree; /* N (power of two) */
+    uint32_t logN; /* log2(N) */
+    const uint64_t *roots; /* size N: bit-reversed forward twiddles */
+    const uint64_t *invRoots; /* size N: bit-reversed inverse twiddles */
+    const uint64_t *rootsQuot; /* size N: floor(roots[k] * 2^64 / q) */
+    const uint64_t *invRootsQuot; /* size N: floor(invRoots[k] * 2^64 / q) */
+    uint64_t nInvModQ;
+    uint64_t nInvQuot; /* Shoup quotient for nInvModQ */
+    uint64_t lastInvScaled; /* invRoots[1] * N^-1 mod q, for the last inverse layer */
+    uint64_t lastInvScaledQuot; /* its Shoup quotient */
+    BarrettConst barrett;
 } NttTables;
 
 /* Forward, in-place. In: coefficients < q. Out: bit-reversed NTT form. */
-HIFHE_ERROR Kernel_Ntt_Forward (uint64_t *poly, const NttTables *tbl);
+HIFHE_ERROR Kernel_Ntt_Forward(uint64_t *poly, const NttTables *tbl);
 
 /* Inverse. In: bit-reversed NTT form. Out: coefficients < q. */
-HIFHE_ERROR Kernel_Ntt_Inverse (uint64_t *poly, const NttTables *tbl);
+HIFHE_ERROR Kernel_Ntt_Inverse(uint64_t *poly, const NttTables *tbl);
 
 /* Compute the tables for (q, polyDegree) into buf and fill tbl.
  * buf holds HIFHE_NTT_TABLE_WORDS(polyDegree) uint64. The caller owns it and
  * must keep it alive while tbl is in use. */
-HIFHE_ERROR Kernel_Ntt_BuildTables(NttTables *tbl, uint64_t *buf,
-                                 Modulus q, uint32_t polyDegree);
+HIFHE_ERROR Kernel_Ntt_BuildTables(NttTables *tbl, uint64_t *buf, Modulus q, uint32_t polyDegree);
 
 /* Fill tbl from tables buf already holds. Computes only the Barrett constant.
  * buf is neither copied nor freed. */
-HIFHE_ERROR Kernel_Ntt_AttachTables(NttTables *tbl, const uint64_t *buf,
-                                  Modulus q, uint32_t polyDegree);
+HIFHE_ERROR Kernel_Ntt_AttachTables(NttTables *tbl, const uint64_t *buf, Modulus q, uint32_t polyDegree);
 
 #ifdef __cplusplus
 }

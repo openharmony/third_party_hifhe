@@ -18,9 +18,9 @@ If the versions differ, this English version is authoritative.
 This policy covers all production code shipped in this repository, including:
 
 - Provider registration, dispatch, and lifecycle management in `src/provider/`.
-- CKKS parameters, key generation, key import/export, encoding, encryption,
-  decryption, and polynomial arithmetic in `src/ckks/`.
-- Public interfaces in `include/` and `src/ckks/include/`.
+- BGV parameters, key generation, encoding, encryption, decryption,
+  serialization, and polynomial arithmetic in `src/bgv/`.
+- Public interfaces in `include/`.
 - Build configuration that affects the delivered libraries.
 
 Future production modules are also in scope. Defects confined to openHiTLS or

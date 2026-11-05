@@ -25,21 +25,21 @@ extern "C" {
 #endif
 
 #define MAX_TEST_FUCNTION_COUNT 100
-#define MAX_TEST_FUNCTION_NAME 500
-#define MAX_ARGUMENT_COUNT 50
-#define MAX_EXPRESSION_COUNT 100
-#define MAX_EXPRESSION_LEN 100
-#define MAX_DATA_LINE_LEN 3500000
-#define MAX_FUNCTION_LINE_LEN 512
-#define MAX_FILE_PATH_LEN 300
-#define MAX_SUITE_COUNT 600
-#define MAX_LOG_LEN 500
+#define MAX_TEST_FUNCTION_NAME  500
+#define MAX_ARGUMENT_COUNT      50
+#define MAX_EXPRESSION_COUNT    100
+#define MAX_EXPRESSION_LEN      100
+#define MAX_DATA_LINE_LEN       3500000
+#define MAX_FUNCTION_LINE_LEN   512
+#define MAX_FILE_PATH_LEN       300
+#define MAX_SUITE_COUNT         600
+#define MAX_LOG_LEN             500
 
-#define TAG_NOT_TAG 0
+#define TAG_NOT_TAG      0
 #define TAG_BEGIN_HEADER 1
-#define TAG_END_HEADER 2
-#define TAG_BEGIN_CASE 3
-#define TAG_END_CASE 4
+#define TAG_END_HEADER   2
+#define TAG_BEGIN_CASE   3
+#define TAG_END_CASE     4
 #define TAG_INCLUDE_BASE 5
 
 #define SPILT_HEX_BLOCK_SIZE 4
@@ -48,9 +48,9 @@ extern "C" {
 #define ARG_TYPE_STR 2
 #define ARG_TYPE_HEX 3
 
-#define BASE_FILE_FORMAT "%s/%s.base.c"
-#define LOG_FILE_DIR "./log/"
-#define LOG_FILE_FORMAT "./log/%s"
+#define BASE_FILE_FORMAT    "%s/%s.base.c"
+#define LOG_FILE_DIR        "./log/"
+#define LOG_FILE_FORMAT     "./log/%s"
 #define FUZZ_PRINT_EXECUTES "\r%d"
 
 typedef struct {
@@ -95,7 +95,7 @@ int ReadLine(FILE *file, char *buf, uint32_t bufLen, bool skipHash, bool skipEmp
 int SplitArguments(char *inStr, uint32_t inLen, char **outParam, uint32_t *paramLen);
 
 int ReadFunction(const char *in, const uint32_t inLen, char *outFuncName, uint32_t outLen, int argv[MAX_ARGUMENT_COUNT],
-    uint32_t *argCount);
+                 uint32_t *argCount);
 
 int AddFunction(const char *funcName, int argv[MAX_ARGUMENT_COUNT], const uint32_t argCount);
 

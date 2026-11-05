@@ -13,4 +13,8 @@ file(GLOB HIFHE_PROVIDER_SOURCES CONFIGURE_DEPENDS
 )
 
 hifhe_add_object_library(hifhe_provider_objects ${HIFHE_PROVIDER_SOURCES})
-target_include_directories(hifhe_provider_objects PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(hifhe_provider_objects PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${HITLS_ROOT_PATH}/config/macro_config
+    ${HITLS_ROOT_PATH}/conf/macro_config
+)

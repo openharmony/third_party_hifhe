@@ -7,6 +7,6 @@ Feature-dependent cases query the loaded provider and skip at runtime.
 
 ```sh
 bash testcode/script/build_sdv.sh
-bash testcode/script/build_sdv.sh run-tests=test_suite_sdv_hifhe_ckks
+bash testcode/script/build_sdv.sh run-tests=test_suite_sdv_hifhe_bgv_api
 bash testcode/script/execute_sdv.sh
 ```

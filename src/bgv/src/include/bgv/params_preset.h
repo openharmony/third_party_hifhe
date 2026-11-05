@@ -26,15 +26,15 @@ extern "C" {
 #endif
 
 typedef struct {
-    uint32_t        polyDegree;
-    uint32_t        plainModBit;      /* used only when plainMod == 0 */
-    uint64_t        plainMod;         /* if non-zero, overrides Proth search */
-    uint64_t        correctionFactor;
-    uint32_t        relinDnum;
-    const uint32_t *cipherModBit;     /* cipherModBit like {44,45...} */
-    uint32_t        cipherModBitSize;
-    const uint64_t *cipherMod;        /* cipherMod, primes of each bit */
-    uint32_t        cipherModSize;
+    uint32_t polyDegree;
+    uint32_t plainModBit; /* used only when plainMod == 0 */
+    uint64_t plainMod; /* if non-zero, overrides Proth search */
+    uint64_t correctionFactor;
+    uint32_t relinDnum;
+    const uint32_t *cipherModBit; /* cipherModBit like {44,45...} */
+    uint32_t cipherModBitSize;
+    const uint64_t *cipherMod; /* cipherMod, primes of each bit */
+    uint32_t cipherModSize;
 } BgvPresetPara;
 
 /* Fill `out` from a preset ID. `out->cipherModBit` points into loader-owned

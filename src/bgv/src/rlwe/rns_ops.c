@@ -14,7 +14,8 @@
  */
 
 #include <string.h>
-#include "bsl_sal.h"
+#include "hifhe_mem.h"
+#include "hifhe_err_internal.h"
 #include "rlwe/rlwe.h"
 #include "rlwe/rlwe_context.h"
 #include "rlwe/rns_ops.h"
@@ -26,24 +27,33 @@
 
 HIFHE_ERROR RLWE_RnsPoly_Create(RnsPoly *out, const RnsPolyConfig *cfg, RlweContext *ctx)
 {
-    if (out == NULL || cfg == NULL || ctx == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || cfg == NULL || ctx == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     memset(out, 0, sizeof(*out));
-    out->config   = *cfg;
-    out->context  = ctx;
+    out->config = *cfg;
+    out->context = ctx;
     out->dataSize = ctx->parameter->polyDegree;
-    out->data     = (uint64_t *)BSL_SAL_Calloc(out->dataSize, (uint32_t)sizeof(uint64_t));
-    if (out->data == NULL) return HIFHE_MEMORY_ERROR;
+    out->data = (uint64_t *)HifheCalloc(out->dataSize, (uint32_t)sizeof(uint64_t));
+    if (out->data == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_MEMORY_ERROR);
+        return HIFHE_MEMORY_ERROR;
+    }
     out->ownsData = 1u;
     return HIFHE_SUCCESS;
 }
 
 HIFHE_ERROR RLWE_RnsPoly_Destroy(RnsPoly *self)
 {
-    if (self == NULL) return HIFHE_NULL_INPUT;
-    if (self->ownsData && self->data != NULL) {
-        BSL_SAL_Free(self->data);
+    if (self == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
     }
-    self->data     = NULL;
+    if (self->ownsData && self->data != NULL) {
+        HifheFree(self->data);
+    }
+    self->data = NULL;
     self->dataSize = 0u;
     self->ownsData = 0u;
     return HIFHE_SUCCESS;
@@ -53,22 +63,41 @@ HIFHE_ERROR RLWE_RnsPoly_Destroy(RnsPoly *self)
 
 static HIFHE_ERROR CheckShape(const RnsPoly *a, const RnsPoly *b)
 {
-    if (a == NULL || b == NULL) return HIFHE_NULL_INPUT;
-    if (a->config.modulus != b->config.modulus) return HIFHE_PARAM_INVALID;
-    if (a->dataSize != b->dataSize) return HIFHE_PARAM_INVALID;
-    if (a->context != b->context) return HIFHE_PARAM_INVALID;
+    if (a == NULL || b == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
+    if (a->config.modulus != b->config.modulus) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
+    if (a->dataSize != b->dataSize) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
+    if (a->context != b->context) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
     return HIFHE_SUCCESS;
 }
 
 HIFHE_ERROR RLWE_RnsPoly_Add(RnsPoly *out, const RnsPoly *a, const RnsPoly *b)
 {
     int32_t r = CheckShape(a, b);
-    if (r != HIFHE_SUCCESS) return r;
-    if (out == NULL) return HIFHE_NULL_INPUT;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
+    if (out == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     Modulus q = a->config.modulus;
     for (uint32_t i = 0; i < a->dataSize; ++i) {
         uint64_t s = a->data[i] + b->data[i];
-        if (s >= q) s -= q;
+        if (s >= q) {
+            s -= q;
+        }
         out->data[i] = s;
     }
     out->config = a->config;
@@ -78,12 +107,19 @@ HIFHE_ERROR RLWE_RnsPoly_Add(RnsPoly *out, const RnsPoly *a, const RnsPoly *b)
 HIFHE_ERROR RLWE_RnsPoly_Sub(RnsPoly *out, const RnsPoly *a, const RnsPoly *b)
 {
     int32_t r = CheckShape(a, b);
-    if (r != HIFHE_SUCCESS) return r;
-    if (out == NULL) return HIFHE_NULL_INPUT;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
+    if (out == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     Modulus q = a->config.modulus;
     for (uint32_t i = 0; i < a->dataSize; ++i) {
         uint64_t d = a->data[i] + q - b->data[i];
-        if (d >= q) d -= q;
+        if (d >= q) {
+            d -= q;
+        }
         out->data[i] = d;
     }
     out->config = a->config;
@@ -92,7 +128,10 @@ HIFHE_ERROR RLWE_RnsPoly_Sub(RnsPoly *out, const RnsPoly *a, const RnsPoly *b)
 
 HIFHE_ERROR RLWE_RnsPoly_Neg(RnsPoly *out, const RnsPoly *a)
 {
-    if (out == NULL || a == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || a == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     Modulus q = a->config.modulus;
     for (uint32_t i = 0; i < a->dataSize; ++i) {
         out->data[i] = (a->data[i] == 0u) ? 0u : (q - a->data[i]);
@@ -105,28 +144,31 @@ HIFHE_ERROR RLWE_RnsPoly_Neg(RnsPoly *out, const RnsPoly *a)
  * context's. Fetched once per loop. */
 static const BarrettConst *LimbBarrett(const RnsPoly *p)
 {
-    return (p != NULL && p->context != NULL)
-               ? RLWE_RlweContext_GetBarrettByModulus(p->context, p->config.modulus)
-               : NULL;
+    return (p != NULL && p->context != NULL) ? RLWE_RlweContext_GetBarrettByModulus(p->context, p->config.modulus) :
+                                               NULL;
 }
 
 HIFHE_ERROR RLWE_RnsPoly_MulDot(RnsPoly *out, const RnsPoly *a, const RnsPoly *b)
 {
     int32_t r = CheckShape(a, b);
-    if (r != HIFHE_SUCCESS) return r;
-    if (out == NULL) return HIFHE_NULL_INPUT;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
+    if (out == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     Modulus q = a->config.modulus;
     /* Both operands vary, so Shoup does not apply. Barrett does, and the
      * context already carries the constant. */
     const BarrettConst *bc = LimbBarrett(a);
     if (bc != NULL) {
         for (uint32_t i = 0; i < a->dataSize; ++i) {
-            ModulusWide p = (ModulusWide)a->data[i] * (ModulusWide)b->data[i];
-            out->data[i] = Kernel_BarrettReduce128((uint64_t)(p >> 64), (uint64_t)p, bc);
+            out->data[i] = Kernel_BarrettMulModInl(a->data[i], b->data[i], bc);
         }
     } else {
         for (uint32_t i = 0; i < a->dataSize; ++i) {
-            out->data[i] = (uint64_t)(((ModulusWide)a->data[i] * (ModulusWide)b->data[i]) % (ModulusWide)q);
+            out->data[i] = Kernel_MulMod(a->data[i], b->data[i], q);
         }
     }
     out->config = a->config;
@@ -136,17 +178,30 @@ HIFHE_ERROR RLWE_RnsPoly_MulDot(RnsPoly *out, const RnsPoly *a, const RnsPoly *b
 HIFHE_ERROR RLWE_RnsPoly_MulDotAcc(RnsPoly *out, const RnsPoly *a, const RnsPoly *b)
 {
     int32_t r = CheckShape(a, b);
-    if (r != HIFHE_SUCCESS) return r;
-    if (out == NULL) return HIFHE_NULL_INPUT;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
+    if (out == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     Modulus q = a->config.modulus;
     const BarrettConst *bc = LimbBarrett(a);
+    if (bc != NULL) {
+        for (uint32_t i = 0; i < a->dataSize; ++i) {
+            uint64_t s = out->data[i] + Kernel_BarrettMulModInl(a->data[i], b->data[i], bc);
+            if (s >= q) {
+                s -= q;
+            }
+            out->data[i] = s;
+        }
+        return HIFHE_SUCCESS;
+    }
     for (uint32_t i = 0; i < a->dataSize; ++i) {
-        ModulusWide w = (ModulusWide)a->data[i] * (ModulusWide)b->data[i];
-        uint64_t p = (bc != NULL)
-                         ? Kernel_BarrettReduce128((uint64_t)(w >> 64), (uint64_t)w, bc)
-                         : (uint64_t)(w % (ModulusWide)q);
-        uint64_t s = out->data[i] + p;
-        if (s >= q) s -= q;
+        uint64_t s = out->data[i] + Kernel_MulMod(a->data[i], b->data[i], q);
+        if (s >= q) {
+            s -= q;
+        }
         out->data[i] = s;
     }
     return HIFHE_SUCCESS;
@@ -154,7 +209,10 @@ HIFHE_ERROR RLWE_RnsPoly_MulDotAcc(RnsPoly *out, const RnsPoly *a, const RnsPoly
 
 HIFHE_ERROR RLWE_RnsPoly_MulScalar(RnsPoly *out, const RnsPoly *a, uint64_t x)
 {
-    if (out == NULL || a == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || a == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     Modulus q = a->config.modulus;
     uint64_t xMod = x % q;
     if (xMod == 1u) {
@@ -167,11 +225,11 @@ HIFHE_ERROR RLWE_RnsPoly_MulScalar(RnsPoly *out, const RnsPoly *a, uint64_t x)
         ShoupConst sc;
         if (Kernel_ShoupConst_Init(&sc, xMod, q) == HIFHE_SUCCESS) {
             for (uint32_t i = 0; i < a->dataSize; ++i) {
-                out->data[i] = Kernel_ShoupMulMod(a->data[i], &sc);
+                out->data[i] = Kernel_ShoupMulModInl(a->data[i], &sc);
             }
         } else {
             for (uint32_t i = 0; i < a->dataSize; ++i) {
-                out->data[i] = (uint64_t)(((ModulusWide)a->data[i] * (ModulusWide)xMod) % (ModulusWide)q);
+                out->data[i] = Kernel_MulMod(a->data[i], xMod, q);
             }
         }
     }
@@ -181,16 +239,24 @@ HIFHE_ERROR RLWE_RnsPoly_MulScalar(RnsPoly *out, const RnsPoly *a, uint64_t x)
 
 HIFHE_ERROR RLWE_RnsPoly_SetSigned(RnsPoly *self, const int64_t *v)
 {
-    if (self == NULL || v == NULL) return HIFHE_NULL_INPUT;
+    if (self == NULL || v == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     Modulus q = self->config.modulus;
-    if (q < 2u) return HIFHE_PARAM_INVALID;
+    if (q < 2u) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
     /* Sampler output is in [-2, 2] for CBD-2 and {-1, 0, 1} for ternary, so
      * the reduction never runs in practice. The compare keeps the function
      * correct for any input. */
     for (uint32_t i = 0; i < self->dataSize; ++i) {
         int64_t s = v[i];
         uint64_t m = (s >= 0) ? (uint64_t)s : (uint64_t)(-s);
-        if (m >= q) m %= q;
+        if (m >= q) {
+            m %= q;
+        }
         self->data[i] = (s >= 0) ? m : ((m == 0u) ? 0u : q - m);
     }
     self->config.dtype = HIFHE_POLY;
@@ -201,27 +267,44 @@ HIFHE_ERROR RLWE_RnsPoly_SetSigned(RnsPoly *self, const int64_t *v)
 
 HIFHE_ERROR RLWE_RnsPoly_ToNtt(RnsPoly *self)
 {
-    if (self == NULL) return HIFHE_NULL_INPUT;
-    if (self->config.dtype == HIFHE_NTT) return HIFHE_SUCCESS;
-    const NttTables *tbl = RLWE_RlweContext_GetNttTablesByModulus(self->context,
-                                                                   self->config.modulus);
-    if (tbl == NULL) return HIFHE_INTERNAL;
+    if (self == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
+    if (self->config.dtype == HIFHE_NTT) {
+        return HIFHE_SUCCESS;
+    }
+    const NttTables *tbl = RLWE_RlweContext_GetNttTablesByModulus(self->context, self->config.modulus);
+    if (tbl == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_INTERNAL);
+        return HIFHE_INTERNAL;
+    }
     int32_t r = Kernel_Ntt_Forward(self->data, tbl);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     self->config.dtype = HIFHE_NTT;
     return HIFHE_SUCCESS;
 }
 
 HIFHE_ERROR RLWE_RnsPoly_ToPoly(RnsPoly *self)
 {
-    if (self == NULL) return HIFHE_NULL_INPUT;
-    if (self->config.dtype == HIFHE_POLY) return HIFHE_SUCCESS;
-    const NttTables *tbl = RLWE_RlweContext_GetNttTablesByModulus(self->context,
-                                                                   self->config.modulus);
-    if (tbl == NULL) return HIFHE_INTERNAL;
+    if (self == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
+    if (self->config.dtype == HIFHE_POLY) {
+        return HIFHE_SUCCESS;
+    }
+    const NttTables *tbl = RLWE_RlweContext_GetNttTablesByModulus(self->context, self->config.modulus);
+    if (tbl == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_INTERNAL);
+        return HIFHE_INTERNAL;
+    }
     int32_t r = Kernel_Ntt_Inverse(self->data, tbl);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     self->config.dtype = HIFHE_POLY;
     return HIFHE_SUCCESS;
 }
-

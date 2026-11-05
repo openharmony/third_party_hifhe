@@ -15,10 +15,16 @@ set(HITLS_LIB_DIR "${HITLS_ROOT_PATH}/build" CACHE PATH
 
 option(HIFHE_BUILD_SHARED "Build the shared provider library" ON)
 option(HIFHE_BUILD_STATIC "Build the static provider library" ON)
-option(HIFHE_CKKS "Build CKKS" ON)
 option(HIFHE_BGV "Build BGV" ON)
+option(HITLS_PROVIDER "Build openHiTLS Provider integration" ON)
+option(HIFHE_BUILD_TESTS "Build regression tests" OFF)
+option(BUILD_BENCHMARK "Build the kernel benchmark" OFF)
 option(HIFHE_ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(HIFHE_ENABLE_GCOV "Enable coverage" OFF)
+
+if(NOT HIFHE_BGV)
+    message(FATAL_ERROR "BGV is the only algorithm and cannot be disabled")
+endif()
 
 if(NOT HIFHE_BUILD_SHARED AND NOT HIFHE_BUILD_STATIC)
     message(FATAL_ERROR "At least one provider library type must be enabled")

@@ -12,117 +12,57 @@
 
 #ifndef HIFHE_TYPES_H
 #define HIFHE_TYPES_H
-
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define HIFHE_PARAM_BASE 5400
-#define HIFHE_PARAM_CKKS_N (HIFHE_PARAM_BASE + 1)
-#define HIFHE_PARAM_CKKS_Q_BITS (HIFHE_PARAM_BASE + 2)
-#define HIFHE_PARAM_CKKS_P_BITS (HIFHE_PARAM_BASE + 3)
-#define HIFHE_PARAM_CKKS_SIGMA_MILLI (HIFHE_PARAM_BASE + 4)
-#define HIFHE_PARAM_CKKS_SLOTS (HIFHE_PARAM_BASE + 5)
-#define HIFHE_PARAM_CKKS_PUBKEY (HIFHE_PARAM_BASE + 6)
-#define HIFHE_PARAM_CKKS_PRVKEY (HIFHE_PARAM_BASE + 7)
+/** Opaque algorithm context owning its parameters and keys; release with HIFHE_Free. */
+typedef struct HIFHE_Ctx HIFHE_Ctx;
+/** Opaque plaintext/ciphertext owning its data; release with HIFHE_HETextFree, even after its context is freed. */
+typedef struct HIFHE_HEText HIFHE_HEText;
 
-/* ----- BGV ----- */
-#define HIFHE_PARAM_BGV_BASE (HIFHE_PARAM_BASE + 100)
-#define HIFHE_PARAM_BGV_POLY_DEGREE (HIFHE_PARAM_BGV_BASE + 1)
-#define HIFHE_PARAM_BGV_CIPHER_MOD_BITS (HIFHE_PARAM_BGV_BASE + 2)
-#define HIFHE_PARAM_BGV_PLAIN_MOD_BIT (HIFHE_PARAM_BGV_BASE + 3)
-#define HIFHE_PARAM_BGV_CORRECTION_FACTOR (HIFHE_PARAM_BGV_BASE + 4)
-#define HIFHE_PARAM_BGV_RELIN_DNUM (HIFHE_PARAM_BGV_BASE + 5)
-#define HIFHE_PARAM_BGV_PUBKEY (HIFHE_PARAM_BGV_BASE + 6)
-#define HIFHE_PARAM_BGV_PRVKEY (HIFHE_PARAM_BGV_BASE + 7)
-#define HIFHE_PARAM_BGV_MSG (HIFHE_PARAM_BGV_BASE + 8)
-#define HIFHE_PARAM_BGV_NEGATE (HIFHE_PARAM_BGV_BASE + 9)
-#define HIFHE_PARAM_BGV_CONSTANT (HIFHE_PARAM_BGV_BASE + 10)
+/** Allocator installed with HIFHE_SetMemFuncs. A zero length is never requested. */
+typedef void *(*HIFHE_MallocFunc)(uint32_t len);
+/** Deallocator installed with HIFHE_SetMemFuncs. A NULL pointer is never passed. */
+typedef void (*HIFHE_FreeFunc)(void *ptr);
+
+/** Algorithm identifiers for HIFHE_New and CRYPT_EAL_ProviderPkeyNewCtx. */
+typedef enum {
+    HIFHE_BGV = (int32_t)0x89000002u,
+} HIFHE_ALG_ID;
+
+#ifdef HITLS_PROVIDER
+/* Provider attribute, passed to CRYPT_EAL_ProviderPkeyNewCtx. */
+#define HIFHE_PROVIDER_ATTR "provider=hifhe"
+
+#define HIFHE_PARAM_BASE             100000
+
+#define HIFHE_PARAM_BGV_BASE      (HIFHE_PARAM_BASE + 100)
+/**
+ * HE message encoding input: BSL_PARAM_TYPE_OCTETS with count host-order uint64_t slots.
+ * valueLen = count * sizeof(uint64_t); 1 <= count <= N; each value is below the plaintext modulus.
+ */
+#define HIFHE_PARAM_BGV_MSG       (HIFHE_PARAM_BGV_BASE + 8)
+/** HEAdd only: BSL_PARAM_TYPE_OCTETS containing one uint8_t equal to 1; negate the first ciphertext. */
+#define HIFHE_PARAM_BGV_NEGATE    (HIFHE_PARAM_BGV_BASE + 9)
+/** BSL_PARAM_TYPE_OCTETS containing a serialized plaintext for message decoding or HEAdd/HEMul. */
 #define HIFHE_PARAM_BGV_PLAINTEXT (HIFHE_PARAM_BGV_BASE + 11)
-#define HIFHE_PARAM_BGV_CIPHERTEXT1 (HIFHE_PARAM_BGV_BASE + 12)
-#define HIFHE_PARAM_BGV_CIPHERTEXT2 (HIFHE_PARAM_BGV_BASE + 13)
-#define HIFHE_PARAM_BGV_RELIN_KEY (HIFHE_PARAM_BGV_BASE + 14)
-#define HIFHE_PARAM_BGV_GALOIS_KEYS (HIFHE_PARAM_BGV_BASE + 15)
-#define HIFHE_PARAM_BGV_ROTATE_STEPS (HIFHE_PARAM_BGV_BASE + 16)
-#define HIFHE_PARAM_BGV_GALOIS_ELTS (HIFHE_PARAM_BGV_BASE + 17)
+#endif
 
-/* Deterministic seed length, HIFHE_CTRL_BGV_SET_SEED. */
-#define HIFHE_BGV_SEED_LEN 32u
+/**
+ * Wire formats for HIFHE_CTRL_BGV_SET_WIRE_FORMAT. HIFHE_Deserialize reads
+ * both whichever is selected; the setting only decides what is written.
+ */
+#define HIFHE_WIRE_HIFHE       0u /* HiFHE's own: carries the preset, the depth and the key origin. */
+#define HIFHE_WIRE_INTERCHANGE 1u /* The 12-byte-header format the Provider reads. */
 
-#define HIFHE_CTRL_BGV_BASE (int32_t)0x6900
+#define HIFHE_PRESET_BGV_BASE 100000
 
+/** BGV preset identifiers for HIFHE_SetParaById; these are not algorithm identifiers. */
 typedef enum {
-    HIFHE_CTRL_BGV_GET_PUBKEY_LEN = HIFHE_CTRL_BGV_BASE + 0,
-    HIFHE_CTRL_BGV_GET_PRVKEY_LEN = HIFHE_CTRL_BGV_BASE + 1,
-    HIFHE_CTRL_BGV_GET_CIPHERTEXT_LEN = HIFHE_CTRL_BGV_BASE + 2,
-    HIFHE_CTRL_BGV_GET_PLAINTEXT_LEN = HIFHE_CTRL_BGV_BASE + 3,
-    HIFHE_CTRL_BGV_GET_MSG_LEN = HIFHE_CTRL_BGV_BASE + 4,
-    HIFHE_CTRL_BGV_GET_POLY_DEGREE = HIFHE_CTRL_BGV_BASE + 5,
-    HIFHE_CTRL_BGV_GET_PLAIN_MOD = HIFHE_CTRL_BGV_BASE + 6,
-    /* val is CRYPT_BGV_Ctx **. Escape hatch past the EAL dispatch. */
-    HIFHE_CTRL_BGV_GET_INNER_CTX = HIFHE_CTRL_BGV_BASE + 7,
-    /* Install a seed by:
-     * uint8_t seed[HIFHE_BGV_SEED_LEN];
-     * CRYPT_EAL_PkeyCtrl(ctx, HIFHE_CTRL_BGV_SET_SEED, seed, sizeof(seed));
-     * Same seed and preset give byte-identical sk, pk, relin and galois keys.
-     * Call after the preset and before Gen. */
-    HIFHE_CTRL_BGV_SET_SEED = HIFHE_CTRL_BGV_BASE + 8,
-    /* Add fresh plainMod-preserving noise by:
-     * BSL_Param p[] = {
-     *     {HIFHE_PARAM_BGV_CIPHERTEXT1, BSL_PARAM_TYPE_OCTETS, ct, ctLen, 0},
-     *     {HIFHE_PARAM_BGV_CIPHERTEXT2, BSL_PARAM_TYPE_OCTETS, out, cap, 0},
-     *     BSL_PARAM_END
-     * };
-     * CRYPT_EAL_PkeyCtrl(ctx, HIFHE_CTRL_BGV_HE_RERANDOMIZE, p, 0);
-     * p[1].useLen holds the bytes written. */
-    HIFHE_CTRL_BGV_HE_RERANDOMIZE = HIFHE_CTRL_BGV_BASE + 9,
-    HIFHE_CTRL_BGV_GET_RELIN_KEY_LEN = HIFHE_CTRL_BGV_BASE + 10,
-    HIFHE_CTRL_BGV_GET_GALOIS_KEYS_LEN = HIFHE_CTRL_BGV_BASE + 11,
-    /* Ciphertext modulus chain length. */
-    HIFHE_CTRL_BGV_GET_LEVEL = HIFHE_CTRL_BGV_BASE + 12,
-    /* val NULL, valLen 0. */
-    HIFHE_CTRL_BGV_GEN_RELIN_KEY = HIFHE_CTRL_BGV_BASE + 13,
-    /* Derive galois keys by:
-     * int32_t steps[] = {1, -1};
-     * BSL_Param p[] = {
-     *     {HIFHE_PARAM_BGV_ROTATE_STEPS, BSL_PARAM_TYPE_OCTETS, steps,
-     *      (uint32_t)sizeof(steps), 0},
-     *     BSL_PARAM_END
-     * };
-     * CRYPT_EAL_PkeyCtrl(ctx, HIFHE_CTRL_BGV_GEN_GALOIS_KEYS, p, 0);
-     * HIFHE_PARAM_BGV_GALOIS_ELTS (uint64_t[]) names the elements directly. */
-    HIFHE_CTRL_BGV_GEN_GALOIS_KEYS = HIFHE_CTRL_BGV_BASE + 14,
-    /* Drop the last modulus of the chain. Same BSL_Param shape as
-     * HIFHE_CTRL_BGV_HE_RERANDOMIZE. */
-    HIFHE_CTRL_BGV_HE_MODSWITCH = HIFHE_CTRL_BGV_BASE + 15,
-    /* Size 3 to size 2 with the relin key. Same shape as HE_RERANDOMIZE. */
-    HIFHE_CTRL_BGV_HE_RELINEARIZE = HIFHE_CTRL_BGV_BASE + 16,
-    /* Rotate by:
-     * int32_t step = 1;
-     * BSL_Param p[] = {
-     *     {HIFHE_PARAM_BGV_CIPHERTEXT1, BSL_PARAM_TYPE_OCTETS, ct, ctLen, 0},
-     *     {HIFHE_PARAM_BGV_ROTATE_STEPS, BSL_PARAM_TYPE_INT32, &step,
-     *      (uint32_t)sizeof(step), 0},
-     *     {HIFHE_PARAM_BGV_CIPHERTEXT2, BSL_PARAM_TYPE_OCTETS, out, cap, 0},
-     *     BSL_PARAM_END
-     * };
-     * CRYPT_EAL_PkeyCtrl(ctx, HIFHE_CTRL_BGV_HE_ROTATE_STEP, p, 0); */
-    HIFHE_CTRL_BGV_HE_ROTATE_STEP = HIFHE_CTRL_BGV_BASE + 17,
-    /* As HE_ROTATE_STEP with HIFHE_PARAM_BGV_GALOIS_ELTS (uint64_t[1]) in
-     * place of the step. Reaches elements that are not a power of 3. */
-    HIFHE_CTRL_BGV_HE_ROTATE_ELT = HIFHE_CTRL_BGV_BASE + 18,
-    /* val is uint32_t *. 1 applies the slot index map in encode and decode. */
-    HIFHE_CTRL_BGV_SET_SLOT_MAP = HIFHE_CTRL_BGV_BASE + 21,
-    HIFHE_CTRL_BGV_GET_SLOT_MAP = HIFHE_CTRL_BGV_BASE + 22,
-} HIFHE_CTRL_BGV_TYPE;
-
-#define HIFHE_PRESET_BGV_BASE (int32_t)0x6500
-
-/* Pass to CRYPT_EAL_PkeyCtrl with CRYPT_CTRL_SET_PARA_BY_ID. */
-typedef enum {
-    HIFHE_BGV_DEFAULT = HIFHE_PRESET_BGV_BASE + 0, /* = HIFHE_BGV_2048_48 */
+    HIFHE_BGV_DEFAULT = HIFHE_PRESET_BGV_BASE + 0, /* Same parameters as HIFHE_BGV_2048_48. */
     HIFHE_BGV_2048_48 = HIFHE_PRESET_BGV_BASE + 1,
     HIFHE_BGV_8192_44x4 = HIFHE_PRESET_BGV_BASE + 2,
     /* 2048, 48-bit cipher, plainMod 65537. */
@@ -133,8 +73,69 @@ typedef enum {
     HIFHE_BGV_8192_44x4_17BIT = HIFHE_PRESET_BGV_BASE + 5,
 } HIFHE_BGV_PRESET;
 
+/**
+ * Native HIFHE_Ctrl commands. Argument sizes below are in bytes.
+ * Length queries describe objects at the configured preset level; use
+ * HIFHE_Serialize(ctx, object, NULL, &len) for an existing object's exact size.
+ * Provider PkeyCtrl forwards the LUT, seed, degree, and length commands with
+ * args = value and len = valueLen. RERANDOMIZE has a separate Provider layout below.
+ * Provider negation uses HIFHE_PARAM_BGV_NEGATE in HEAdd, not a SET_NEGATE ctrl call.
+ */
+typedef enum {
+    /**
+     * Add noise to a ciphertext, creating a new object; no key is required.
+     * text: input ciphertext without a negate flag; value: HIFHE_HEText ** with *value == NULL;
+     * valueLen: sizeof(HIFHE_HEText *). Free the result with HIFHE_HETextFree.
+     * This does not bootstrap the ciphertext or reset its noise budget.
+     * It does not hide the relation to the input or provide circuit privacy.
+     * Provider: args is a BSL_Param array containing CRYPT_PARAM_PKEY_HE_CIPHERTEXT1
+     * (input bytes) and CRYPT_PARAM_PKEY_HE_CIPHERTEXT2 (output buffer), both OCTETS,
+     * followed by BSL_PARAM_END; pass len = 0. Output useLen receives the actual/required size.
+     */
+    HIFHE_CTRL_BGV_RERANDOMIZE = 100001,
+    /**
+     * Mark text, a ciphertext, for negation when passed as para1 to HIFHE_Add.
+     * value: NULL; valueLen: 0. This sets a flag, not a toggle or immediate arithmetic operation.
+     * The input stays marked; the Add result is unmarked.
+     * Decrypt, Mul, Serialize, and RERANDOMIZE reject marked inputs.
+     */
+    HIFHE_CTRL_BGV_SET_NEGATE = 100002,
+    /**
+     * Set the context's precomputed-table cache before HIFHE_SetParaById.
+     * text: NULL; value: uint32_t * containing 0 (disabled, default) or 1 (enabled);
+     * valueLen: sizeof(uint32_t). Returns HIFHE_BAD_STATE after parameters are configured.
+     */
+    HIFHE_CTRL_BGV_SET_LUT_CACHE = 100003,
+    /**
+     * Serialized size of a fresh two-component ciphertext.
+     * text = NULL; value = uint32_t * output; valueLen = sizeof(uint32_t).
+     */
+    HIFHE_CTRL_BGV_GET_CIPHERTEXT_LEN = 100004,
+    /** Serialized plaintext size: text = NULL, value = uint32_t * output, valueLen = sizeof(uint32_t). */
+    HIFHE_CTRL_BGV_GET_PLAINTEXT_LEN = 100005,
+    /** Ring degree, also the BGV slot count: text = NULL, value = uint32_t * output, valueLen = sizeof(uint32_t). */
+    HIFHE_CTRL_BGV_GET_POLY_DEGREE = 100006,
+    /**
+     * Set the BGV seed after parameter configuration and before key generation.
+     * text: NULL; value: 32 seed bytes, copied by the call; valueLen: 32.
+     * Returns HIFHE_BAD_STATE if keys have already been generated.
+     * A seed also makes the key origin reproducible: keys generated from one
+     * seed carry one origin, so a ciphertext serialized by one context
+     * deserializes into another that holds the same seed.
+     */
+    HIFHE_CTRL_BGV_SET_SEED = 100007,
+    /**
+     * Select the format HIFHE_Serialize writes.
+     * text: NULL; value: uint32_t * containing HIFHE_WIRE_HIFHE (the default)
+     * or HIFHE_WIRE_INTERCHANGE; valueLen: sizeof(uint32_t).
+     * Accepted before or after HIFHE_SetParaById, since the setting belongs to
+     * the context rather than to its parameters. Applies from the next call;
+     * existing objects are unaffected.
+     */
+    HIFHE_CTRL_BGV_SET_WIRE_FORMAT = 100008,
+} HIFHE_CMD;
+
 #ifdef __cplusplus
 }
 #endif
-
 #endif

@@ -25,25 +25,16 @@ typedef struct {
 } MdAlgMap;
 
 static MdAlgMap g_mdAlgMap[] = {
-    { CRYPT_MD_MD5, 0 },
-    { CRYPT_MD_SHA1, 1 },
-    { CRYPT_MD_SHA224, 2 },
-    { CRYPT_MD_SHA256, 3 },
-    { CRYPT_MD_SHA384, 4 },
-    { CRYPT_MD_SHA512, 5 },
-    { CRYPT_MD_SHA3_224, 6 },
-    { CRYPT_MD_SHA3_256, 7 },
-    { CRYPT_MD_SHA3_384, 8 },
-    { CRYPT_MD_SHA3_512, 9 },
-    { CRYPT_MD_SHAKE128, 10 },
-    { CRYPT_MD_SHAKE256, 11 },
-    { CRYPT_MD_SM3, 12 },
+    {CRYPT_MD_MD5, 0},      {CRYPT_MD_SHA1, 1},     {CRYPT_MD_SHA224, 2},    {CRYPT_MD_SHA256, 3},
+    {CRYPT_MD_SHA384, 4},   {CRYPT_MD_SHA512, 5},   {CRYPT_MD_SHA3_224, 6},  {CRYPT_MD_SHA3_256, 7},
+    {CRYPT_MD_SHA3_384, 8}, {CRYPT_MD_SHA3_512, 9}, {CRYPT_MD_SHAKE128, 10}, {CRYPT_MD_SHAKE256, 11},
+    {CRYPT_MD_SM3, 12},
 };
 
 #define MD_ALG_MAP_CNT ((int)(sizeof(g_mdAlgMap) / sizeof(MdAlgMap)))
 
 // All MD algorithms are available by default.
-static int g_mdDisableTable[MD_ALG_MAP_CNT] = { 0 };
+static int g_mdDisableTable[MD_ALG_MAP_CNT] = {0};
 static bool g_isInitMd = false;
 
 static int g_avlRandAlg = -1;
@@ -122,7 +113,6 @@ static bool IsDrbgCtrSm4Disabled()
 #endif
 }
 
-
 static int GetDrbgHashAlgId(void)
 {
     InitMdTable();
@@ -164,7 +154,7 @@ static int GetDrbgHmacAlgId(void)
 bool IsMdAlgDisabled(int id)
 {
     InitMdTable();
-    bool res = false;  // By default, this algorithm is not disabled.
+    bool res = false; // By default, this algorithm is not disabled.
 
     for (int i = 0; i < MD_ALG_MAP_CNT; i++) {
         if (id == g_mdAlgMap[i].id) {
@@ -395,7 +385,7 @@ bool IsAesAlgDisabled(int id)
             return true;
 #endif
         default:
-            return false;  // Unsupported algorithm ID
+            return false; // Unsupported algorithm ID
     }
 #else
     (void)id;
@@ -436,7 +426,7 @@ bool IsSm4AlgDisabled(int id)
             return true;
 #endif
         default:
-            return false;  // Unsupported algorithm ID
+            return false; // Unsupported algorithm ID
     }
 #else
     (void)id;
@@ -499,7 +489,7 @@ bool IsCmacAlgDisabled(int id)
             return true;
 #endif
         default:
-            return false;  // Unsupported algorithm ID
+            return false; // Unsupported algorithm ID
     }
 #else
     (void)id;
@@ -567,5 +557,5 @@ bool IsCurve25519AlgDisabled(int id)
         return false;
 #endif
     }
-    return false;  // Unsupported algorithm ID
+    return false; // Unsupported algorithm ID
 }

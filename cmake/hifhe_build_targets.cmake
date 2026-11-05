@@ -23,15 +23,21 @@ function(hifhe_add_provider TARGET LIB_TYPE)
     set_target_properties(${TARGET} PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-        OUTPUT_NAME hifhe_provider
+        OUTPUT_NAME hifhe
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+        SKIP_BUILD_RPATH TRUE
+        INSTALL_RPATH ""
+        INSTALL_RPATH_USE_LINK_PATH FALSE
     )
     target_link_libraries(${TARGET}
         PUBLIC _hifhe_public_headers
         PRIVATE _hifhe_compile_options ${HITLS_BSL_LIB} ${HITLS_CRYPTO_LIB}
     )
-    if(HIFHE_CKKS)
-        target_link_libraries(${TARGET} PRIVATE m)
+    if(LIB_TYPE STREQUAL "SHARED" AND UNIX AND NOT APPLE)
+        target_link_options(${TARGET} PRIVATE
+            "LINKER:--version-script=${PROJECT_SOURCE_DIR}/cmake/hifhe.exports" "LINKER:--no-undefined"
+            "$<$<NOT:$<CONFIG:Debug>>:LINKER:--gc-sections>")
+        set_property(TARGET ${TARGET} APPEND PROPERTY LINK_DEPENDS "${PROJECT_SOURCE_DIR}/cmake/hifhe.exports")
     endif()
 endfunction()
 

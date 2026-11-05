@@ -20,7 +20,8 @@
  *   pk = (b, a),  a uniform in R_q,  b = -a*s + t*e
  *
  * Relin / galois keys use the gadget in bgv/keyswitch.h: piece (i, j)
- * encrypts T^j * qhat_i * target, laid out [i * digits + j]. target is
+ * encrypts T^j * qhat_i * target, T = 2^BGV_KeySwitch_LogT(base, digits),
+ * laid out [i * digits + j]. target is
  * s^2 for relin, sigma_k(s) for the galois key at k.
  *
  * Randomness comes from basic/rand.c: a seeded BgvContext gives
@@ -28,7 +29,7 @@
  */
 
 #include <string.h>
-#include "bsl_sal.h"
+#include "hifhe_err_internal.h"
 #include "bgv/keygen.h"
 #include "bgv/keys.h"
 #include "bgv/ciphertext.h"
@@ -47,48 +48,48 @@
 uint32_t BGV_BV_DnumForModulus(Modulus q)
 {
     uint32_t bits = 0u;
-    for (uint64_t v = q; v > 0u; v >>= 1) bits++;
-    if (bits == 0u) return 1u;
+    for (uint64_t v = q; v > 0u; v >>= 1) {
+        bits++;
+    }
+    if (bits == 0u) {
+        return 1u;
+    }
     return (bits + BGV_KSW_LOG_T - 1u) / BGV_KSW_LOG_T;
 }
 
 uint32_t BGV_BV_DigitsForBase(const RnsBase *base)
 {
-    if (base == NULL || base->size == 0u) return 1u;
+    if (base == NULL || base->size == 0u) {
+        return 1u;
+    }
     uint32_t widest = 1u;
     for (uint32_t i = 0; i < base->size; ++i) {
         uint32_t d = BGV_BV_DnumForModulus(base->data[i]);
-        if (d > widest) widest = d;
+        if (d > widest) {
+            widest = d;
+        }
     }
     return widest;
 }
 
 /* ---- Small helpers ---- */
 
-/* Secret-derived polynomials (s in coefficient form, s^2) otherwise stay
- * readable in freed memory. Views own nothing and must not be wiped: their
- * storage is the secret key itself. */
-static void CleanseAndDestroy(CrtPoly *p)
-{
-    if (p->ownsData && p->data != NULL && p->dataSize > 0u) {
-        BSL_SAL_CleanseData(p->data, p->dataSize * (uint32_t)sizeof(uint64_t));
-    }
-    RLWE_CrtPoly_Destroy(p);
-}
-
-static HIFHE_ERROR SampleUniformCrtNtt(CrtPoly *out, BGVContext *ctx,
-                                     const BgvEntropy *src)
+static HIFHE_ERROR SampleUniformCrtNtt(CrtPoly *out, BGVContext *ctx, const BgvEntropy *src)
 {
     /* Uniform in the NTT domain; NTT is a bijection, so this is uniform. */
     CrtPolyConfig cfg;
     memset(&cfg, 0, sizeof(cfg));
-    int32_t r = Uint64Vector_Create(&cfg.rnsbase, ctx->rlweContext.cipherRnsBase.data,
-                                    ctx->rlweContext.cipherRnsBase.size);
-    if (r != HIFHE_SUCCESS) return r;
+    int32_t r =
+        Uint64Vector_Create(&cfg.rnsbase, ctx->rlweContext.cipherRnsBase.data, ctx->rlweContext.cipherRnsBase.size);
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     cfg.dtype = HIFHE_NTT;
     r = RLWE_CrtPoly_Create(out, &cfg, &ctx->rlweContext);
     Uint64Vector_Destroy(&cfg.rnsbase);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
 
     uint32_t N = ctx->rlweContext.parameter->polyDegree;
     for (uint32_t i = 0; i < out->config.rnsbase.size; ++i) {
@@ -105,21 +106,24 @@ static HIFHE_ERROR SampleUniformCrtNtt(CrtPoly *out, BGVContext *ctx,
 /* Secret-key coefficient distribution. SECRET_FIXED_WEIGHT matches the
  * predecessor: polyDegree/4 at +1, the same at -1, rest zero, shuffled.
  * CBD is kept for error polynomials. */
-#define BGV_SECRET_WEIGHT(polyDegree)  ((polyDegree) >> 1)
+#define BGV_SECRET_WEIGHT(polyDegree) ((polyDegree) >> 1)
 
 /* Sample a small poly (CBD-2 by default) into a CrtPoly, COEFF form. */
-static HIFHE_ERROR SampleSmallCrtCoeff(CrtPoly *out, BGVContext *ctx,
-                                     const BgvEntropy *src, bool ternary)
+static HIFHE_ERROR SampleSmallCrtCoeff(CrtPoly *out, BGVContext *ctx, const BgvEntropy *src, bool ternary)
 {
     CrtPolyConfig cfg;
     memset(&cfg, 0, sizeof(cfg));
-    int32_t r = Uint64Vector_Create(&cfg.rnsbase, ctx->rlweContext.cipherRnsBase.data,
-                                    ctx->rlweContext.cipherRnsBase.size);
-    if (r != HIFHE_SUCCESS) return r;
+    int32_t r =
+        Uint64Vector_Create(&cfg.rnsbase, ctx->rlweContext.cipherRnsBase.data, ctx->rlweContext.cipherRnsBase.size);
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     cfg.dtype = HIFHE_POLY;
     r = RLWE_CrtPoly_Create(out, &cfg, &ctx->rlweContext);
     Uint64Vector_Destroy(&cfg.rnsbase);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
 
     uint32_t N = ctx->rlweContext.parameter->polyDegree;
     Int64Vector scratch;
@@ -129,8 +133,7 @@ static HIFHE_ERROR SampleSmallCrtCoeff(CrtPoly *out, BGVContext *ctx,
         return r;
     }
     if (ternary) {
-        r = Kernel_Sampler_TernaryFixedWeight(scratch.data, N,
-                                              BGV_SECRET_WEIGHT(N), src);
+        r = Kernel_Sampler_TernaryFixedWeight(scratch.data, N, BGV_SECRET_WEIGHT(N), src);
     } else {
         r = Kernel_Sampler_CBD(scratch.data, N, 2u, src);
     }
@@ -152,7 +155,10 @@ static HIFHE_ERROR SampleSmallCrtCoeff(CrtPoly *out, BGVContext *ctx,
 
 HIFHE_ERROR BGV_KeyGenerator_Create(KeyGenerator *out, BGVContext *ctx)
 {
-    if (out == NULL || ctx == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || ctx == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     memset(out, 0, sizeof(*out));
     out->context = ctx;
     return HIFHE_SUCCESS;
@@ -160,7 +166,10 @@ HIFHE_ERROR BGV_KeyGenerator_Create(KeyGenerator *out, BGVContext *ctx)
 
 HIFHE_ERROR BGV_KeyGenerator_Destroy(KeyGenerator *self)
 {
-    if (self == NULL) return HIFHE_NULL_INPUT;
+    if (self == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     BGV_SecretKey_Free(&self->sk);
     self->context = NULL;
     return HIFHE_SUCCESS;
@@ -168,20 +177,25 @@ HIFHE_ERROR BGV_KeyGenerator_Destroy(KeyGenerator *self)
 
 HIFHE_ERROR BGV_KeyGenerator_GenSecretKey(KeyGenerator *self)
 {
-    if (self == NULL || self->context == NULL) return HIFHE_NULL_INPUT;
+    if (self == NULL || self->context == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     BGV_SecretKey_Free(&self->sk);
 
     /* Sample ternary secret into a coefficient-form CrtPoly, then NTT. */
     CrtPoly poly;
     const uint8_t *seed = BgvContext_GetSeed(&self->context->rlweContext.seedCtx);
     BgvLabel lbl;
-    BgvEntropy src = BgvEntropy_Seeded(seed, seed ? HIFHE_CTX_SEED_LEN : 0u,
-                                       BgvLabel_Build(&lbl, "sk", NULL, 0u, NULL));
+    BgvEntropy src =
+        BgvEntropy_Seeded(seed, seed ? HIFHE_CTX_SEED_LEN : 0u, BgvLabel_Build(&lbl, "sk", NULL, 0u, NULL));
     int32_t r = SampleSmallCrtCoeff(&poly, self->context, &src, true);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     r = RLWE_CrtPoly_ToNtt(&poly);
     if (r != HIFHE_SUCCESS) {
-        CleanseAndDestroy(&poly);
+        RLWE_CrtPoly_Destroy(&poly);
         return r;
     }
 
@@ -189,13 +203,14 @@ HIFHE_ERROR BGV_KeyGenerator_GenSecretKey(KeyGenerator *self)
      * RLWE_CrtPoly_Create, so hand it over rather than allocating again. */
     self->sk = BGV_SecretKey_New();
     if (self->sk == NULL) {
-        CleanseAndDestroy(&poly);
+        RLWE_CrtPoly_Destroy(&poly);
+        HIFHE_ERR_PUSH_ERROR(HIFHE_MEMORY_ERROR);
         return HIFHE_MEMORY_ERROR;
     }
     r = BGV_Plaintext_CreateFromCrtPoly(self->sk, &poly, 1u, self->context);
     if (r != HIFHE_SUCCESS) {
         BGV_SecretKey_Free(&self->sk);
-        CleanseAndDestroy(&poly);
+        RLWE_CrtPoly_Destroy(&poly);
         return r;
     }
     return HIFHE_SUCCESS;
@@ -206,31 +221,29 @@ HIFHE_ERROR BGV_KeyGenerator_GenSecretKey(KeyGenerator *self)
  * used as one keyswitch-key piece or as a public key. `shiftPerLimb` carries
  * the gadget factor already reduced mod each q_l, since T^j * qhat_i
  * generally exceeds 64 bits. NULL gives a plain pk / ct-of-zero. */
-static HIFHE_ERROR MakeKeyPiece(Ciphertext *out,
-                              const CrtPoly *sk_ntt,
-                              const CrtPoly *target_ntt,
-                              const uint64_t *shiftPerLimb,
-                              BGVContext *ctx,
-                              const uint8_t *seed, uint32_t seedLen,
-                              const char *path, const uint64_t *idx, uint32_t nIdx)
+static HIFHE_ERROR MakeKeyPiece(Ciphertext *out, const CrtPoly *sk_ntt, const CrtPoly *target_ntt,
+                                const uint64_t *shiftPerLimb, BGVContext *ctx, const uint8_t *seed, uint32_t seedLen,
+                                const char *path, const uint64_t *idx, uint32_t nIdx)
 {
     CiphertextConfig cfg;
-    int32_t r = BGV_CiphertextConfig_Create(&cfg, 2u, ctx->bgvParameter->correctionFactor,
-                                            &ctx->rlweContext.cipherRnsBase);
-    if (r != HIFHE_SUCCESS) return r;
+    int32_t r =
+        BGV_CiphertextConfig_Create(&cfg, 2u, ctx->bgvParameter->correctionFactor, &ctx->rlweContext.cipherRnsBase);
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     r = BGV_Ciphertext_Create(out, &cfg, ctx);
     BGV_CiphertextConfig_Destroy(&cfg);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
 
     Modulus t = ctx->bgvParameter->plainMod;
 
     /* Sibling labels under this piece's path: no two pieces, no two roles
      * share a stream. */
     BgvLabel lblA, lblE;
-    BgvEntropy srcA = BgvEntropy_Seeded(seed, seedLen,
-                                        BgvLabel_Build(&lblA, path, idx, nIdx, "a"));
-    BgvEntropy srcE = BgvEntropy_Seeded(seed, seedLen,
-                                        BgvLabel_Build(&lblE, path, idx, nIdx, "e"));
+    BgvEntropy srcA = BgvEntropy_Seeded(seed, seedLen, BgvLabel_Build(&lblA, path, idx, nIdx, "a"));
+    BgvEntropy srcE = BgvEntropy_Seeded(seed, seedLen, BgvLabel_Build(&lblE, path, idx, nIdx, "e"));
 
     /* a: uniform in NTT. */
     CrtPoly a;
@@ -260,51 +273,78 @@ static HIFHE_ERROR MakeKeyPiece(Ciphertext *out,
      * b1 is scratch until b0 is done. */
     CrtPoly b0, b1;
     r = BGV_Ciphertext_GetCrtPolyAt(&b0, 0u, out);
-    if (r != HIFHE_SUCCESS) goto cleanup;
+    if (r != HIFHE_SUCCESS) {
+        goto cleanup;
+    }
     r = BGV_Ciphertext_GetCrtPolyAt(&b1, 1u, out);
-    if (r != HIFHE_SUCCESS) goto cleanup;
+    if (r != HIFHE_SUCCESS) {
+        goto cleanup;
+    }
 
-    r = RLWE_CrtPoly_MulScalar(&b0, &e, t);            if (r != HIFHE_SUCCESS) goto cleanup;
-    r = RLWE_CrtPoly_MulDot(&b1, &a, sk_ntt);          if (r != HIFHE_SUCCESS) goto cleanup;
-    r = RLWE_CrtPoly_Sub(&b0, &b0, &b1);               if (r != HIFHE_SUCCESS) goto cleanup;
+    r = RLWE_CrtPoly_MulScalar(&b0, &e, t);
+    if (r != HIFHE_SUCCESS) {
+        goto cleanup;
+    }
+    r = RLWE_CrtPoly_MulDot(&b1, &a, sk_ntt);
+    if (r != HIFHE_SUCCESS) {
+        goto cleanup;
+    }
+    r = RLWE_CrtPoly_Sub(&b0, &b0, &b1);
+    if (r != HIFHE_SUCCESS) {
+        goto cleanup;
+    }
     if (shiftPerLimb != NULL && target_ntt != NULL) {
         r = RLWE_CrtPoly_MulScalarPerLimb(&b1, target_ntt, shiftPerLimb);
-        if (r != HIFHE_SUCCESS) goto cleanup;
+        if (r != HIFHE_SUCCESS) {
+            goto cleanup;
+        }
         r = RLWE_CrtPoly_Add(&b0, &b0, &b1);
-        if (r != HIFHE_SUCCESS) goto cleanup;
+        if (r != HIFHE_SUCCESS) {
+            goto cleanup;
+        }
     }
     r = RLWE_CrtPoly_Assign(&b1, &a);
 cleanup:
     RLWE_CrtPoly_Destroy(&a);
     RLWE_CrtPoly_Destroy(&e);
-    if (r != HIFHE_SUCCESS) BGV_Ciphertext_Destroy(out);
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(out);
+    }
     return r;
 }
 
 HIFHE_ERROR BGV_KeyGenerator_GenPublicKey(PublicKey *out, const KeyGenerator *self)
 {
-    if (out == NULL || self == NULL || self->sk == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || self == NULL || self->sk == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     /* pk = enc_of_zero under sk: b = -a*s + t*e, a. */
     CrtPoly sk_view;
-    int32_t r = RLWE_CrtPoly_CreateFromExist(&sk_view, self->sk->data, self->sk->dataSize,
-                                             &self->sk->config.crtConfig, &self->context->rlweContext);
-    if (r != HIFHE_SUCCESS) return r;
+    int32_t r = RLWE_CrtPoly_CreateFromExist(&sk_view, self->sk->data, self->sk->dataSize, &self->sk->config.crtConfig,
+                                             &self->context->rlweContext);
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     const uint8_t *seed = BgvContext_GetSeed(&self->context->rlweContext.seedCtx);
-    r = MakeKeyPiece(out, &sk_view, NULL, NULL, self->context,
-                     seed, seed ? HIFHE_CTX_SEED_LEN : 0u, "pk", NULL, 0u);
+    r = MakeKeyPiece(out, &sk_view, NULL, NULL, self->context, seed, seed ? HIFHE_CTX_SEED_LEN : 0u, "pk", NULL, 0u);
     RLWE_CrtPoly_Destroy(&sk_view);
     return r;
 }
 
-HIFHE_ERROR BGV_KeyGenerator_GenRelinKey(RelinKeys *out, uint32_t digits,
-                                       const KeyGenerator *self)
+HIFHE_ERROR BGV_KeyGenerator_GenRelinKey(RelinKeys *out, uint32_t digits, const KeyGenerator *self)
 {
-    if (out == NULL || self == NULL || self->sk == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || self == NULL || self->sk == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     /* Non-owning view onto sk_ntt, live until the last MakeKeyPiece. */
     CrtPoly sk_view;
-    int32_t r = RLWE_CrtPoly_CreateFromExist(&sk_view, self->sk->data, self->sk->dataSize,
-                                             &self->sk->config.crtConfig, &self->context->rlweContext);
-    if (r != HIFHE_SUCCESS) return r;
+    int32_t r = RLWE_CrtPoly_CreateFromExist(&sk_view, self->sk->data, self->sk->dataSize, &self->sk->config.crtConfig,
+                                             &self->context->rlweContext);
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
 
     /* Compute s^2 in NTT form. */
     CrtPoly sk_sq;
@@ -316,49 +356,56 @@ HIFHE_ERROR BGV_KeyGenerator_GenRelinKey(RelinKeys *out, uint32_t digits,
     }
     r = RLWE_CrtPoly_MulDot(&sk_sq, &sk_sq, &sk_sq);
     if (r != HIFHE_SUCCESS) {
-        CleanseAndDestroy(&sk_sq);
+        RLWE_CrtPoly_Destroy(&sk_sq);
         RLWE_CrtPoly_Destroy(&sk_view);
         return r;
     }
 
     const RnsBase *base = &self->context->rlweContext.cipherRnsBase;
     uint32_t L = base->size;
-    uint32_t required = BGV_BV_DigitsForBase(base);
-    if (digits == 0u) digits = required;
-    /* Below `required` the decomposition silently loses its high digits;
-     * above BGV_KSW_MAX_DIGITS the piece count L * digits wraps uint32 and
-     * the generation loop writes past the allocation. */
-    if (digits < required || digits > BGV_KSW_MAX_DIGITS) {
-        CleanseAndDestroy(&sk_sq);
+    if (digits == 0u) {
+        digits = BGV_KeySwitch_DefaultDigits(base, self->context->rlweContext.parameter->polyDegree,
+                                             self->context->bgvParameter->plainMod);
+    }
+    /* Any count covers the limb, since the base widens to match. Above
+     * BGV_KSW_MAX_DIGITS the piece count L * digits can wrap uint32 and the
+     * generation loop writes past the allocation. */
+    if (digits > BGV_KSW_MAX_DIGITS) {
+        RLWE_CrtPoly_Destroy(&sk_sq);
         RLWE_CrtPoly_Destroy(&sk_view);
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
         return HIFHE_PARAM_INVALID;
     }
     r = BGV_RelinKeys_Create(out, L, digits, self->context);
     if (r != HIFHE_SUCCESS) {
-        CleanseAndDestroy(&sk_sq);
+        RLWE_CrtPoly_Destroy(&sk_sq);
         RLWE_CrtPoly_Destroy(&sk_view);
         return r;
     }
 
     const uint8_t *seed = BgvContext_GetSeed(&self->context->rlweContext.seedCtx);
     uint64_t gadget[HIFHE_BGV_MAX_CHAIN_LEN];
+    uint32_t logT = BGV_KeySwitch_LogT(base, digits);
     for (uint32_t i = 0; i < L; ++i) {
         for (uint32_t j = 0; j < digits; ++j) {
-            r = BGV_KeySwitch_GadgetFactor(gadget, base, i, j);
+            r = BGV_KeySwitch_GadgetFactor(gadget, base, i, j, logT);
             if (r == HIFHE_SUCCESS) {
-                const uint64_t idx[2] = { (uint64_t)i, (uint64_t)j };
-                r = MakeKeyPiece(&out->pieces[i * digits + j], &sk_view, &sk_sq, gadget,
-                                 self->context, seed, seed ? HIFHE_CTX_SEED_LEN : 0u,
-                                 "relin", idx, 2u);
+                /* The gadget width is part of the label: a piece encrypts
+                 * T^j * qhat_i * s^2, so two pieces sharing (a, e) under
+                 * different T differ by a known multiple of s^2. */
+                const uint64_t idx[3] = {(uint64_t)i, (uint64_t)j, (uint64_t)logT};
+                r = MakeKeyPiece(&out->pieces[i * digits + j], &sk_view, &sk_sq, gadget, self->context, seed,
+                                 seed ? HIFHE_CTX_SEED_LEN : 0u, "relin", idx, 3u);
             }
             if (r != HIFHE_SUCCESS) {
-                CleanseAndDestroy(&sk_sq); RLWE_CrtPoly_Destroy(&sk_view);
+                RLWE_CrtPoly_Destroy(&sk_sq);
+                RLWE_CrtPoly_Destroy(&sk_view);
                 BGV_RelinKeys_Destroy(out);
                 return r;
             }
         }
     }
-    CleanseAndDestroy(&sk_sq);
+    RLWE_CrtPoly_Destroy(&sk_sq);
     RLWE_CrtPoly_Destroy(&sk_view);
     return HIFHE_SUCCESS;
 }
@@ -367,11 +414,16 @@ HIFHE_ERROR BGV_KeyGenerator_GenRelinKey(RelinKeys *out, uint32_t digits,
  * Returns a fresh CrtPoly in POLY form. */
 static HIFHE_ERROR ApplyGaloisToCoeffPoly(CrtPoly *out, const CrtPoly *in, uint64_t k, uint32_t N)
 {
-    if (out == NULL || in == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || in == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     /* `in` is POLY form. Destination index is (j*k) mod 2N; landing in
      * [N, 2N) maps to the top half and flips sign. */
     int32_t r = RLWE_CrtPoly_Copy(out, in);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     memset(out->data, 0, out->dataSize * sizeof(uint64_t));
 
     for (uint32_t i = 0; i < in->config.rnsbase.size; ++i) {
@@ -388,7 +440,7 @@ static HIFHE_ERROR ApplyGaloisToCoeffPoly(CrtPoly *out, const CrtPoly *in, uint6
             uint64_t v = src[j];
             if (idx >= N) {
                 idx -= N;
-                v = (v == 0u) ? 0u : (q - v);   /* sign flip */
+                v = (q - v) & (0u - (uint64_t)(v != 0u)); /* sign flip */
             }
             dst[idx] = v;
         }
@@ -396,60 +448,76 @@ static HIFHE_ERROR ApplyGaloisToCoeffPoly(CrtPoly *out, const CrtPoly *in, uint6
     return HIFHE_SUCCESS;
 }
 
-HIFHE_ERROR BGV_KeyGenerator_GenGaloisKeys(GaloisKeys *out,
-                                         const uint64_t *elts, uint32_t count,
-                                         const KeyGenerator *self)
+HIFHE_ERROR BGV_KeyGenerator_GenGaloisKeys(GaloisKeys *out, const uint64_t *elts, uint32_t count,
+                                           const KeyGenerator *self)
 {
-    if (out == NULL || self == NULL || self->sk == NULL || elts == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL || self == NULL || self->sk == NULL || elts == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
     uint32_t N = self->context->rlweContext.parameter->polyDegree;
+    /* At most N distinct odd elements exist mod 2N; more is malformed. */
+    if (count == 0u || count > N) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
     /* sigma_k permutes coefficients only for odd k below 2N. An even element
      * sends two sources to one destination and leaves the rest of the
      * polynomial zeroed, so the key would rotate to garbage without error. */
     for (uint32_t i = 0; i < count; ++i) {
-        if ((elts[i] & 1u) == 0u || elts[i] >= 2u * (uint64_t)N) return HIFHE_PARAM_INVALID;
+        if ((elts[i] & 1u) == 0u || elts[i] >= 2u * (uint64_t)N) {
+            HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+            return HIFHE_PARAM_INVALID;
+        }
     }
 
     /* The Galois permutation needs sk in coefficient form; inverse-NTT a copy. */
     CrtPoly sk_view;
-    int32_t r = RLWE_CrtPoly_CreateFromExist(&sk_view, self->sk->data, self->sk->dataSize,
-                                             &self->sk->config.crtConfig, &self->context->rlweContext);
-    if (r != HIFHE_SUCCESS) return r;
+    int32_t r = RLWE_CrtPoly_CreateFromExist(&sk_view, self->sk->data, self->sk->dataSize, &self->sk->config.crtConfig,
+                                             &self->context->rlweContext);
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     CrtPoly sk_coeff;
     memset(&sk_coeff, 0, sizeof(sk_coeff));
     r = RLWE_CrtPoly_Copy(&sk_coeff, &sk_view);
     RLWE_CrtPoly_Destroy(&sk_view);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     r = RLWE_CrtPoly_ToPoly(&sk_coeff);
     if (r != HIFHE_SUCCESS) {
-        CleanseAndDestroy(&sk_coeff);
+        RLWE_CrtPoly_Destroy(&sk_coeff);
         return r;
     }
 
     BGV_GaloisKeys_Destroy(out);
     r = BGV_GaloisKeys_Create(out, self->context);
     if (r != HIFHE_SUCCESS) {
-        CleanseAndDestroy(&sk_coeff);
+        RLWE_CrtPoly_Destroy(&sk_coeff);
         return r;
     }
 
     r = BGV_GaloisKeys_CreateEntries(out, count);
     if (r != HIFHE_SUCCESS) {
-        CleanseAndDestroy(&sk_coeff);
+        RLWE_CrtPoly_Destroy(&sk_coeff);
         return r;
     }
 
     /* MakeKeyPiece needs sk in NTT form for the -a*s term. */
     CrtPoly sk_ntt_view;
-    r = RLWE_CrtPoly_CreateFromExist(&sk_ntt_view, self->sk->data, self->sk->dataSize,
-                                     &self->sk->config.crtConfig, &self->context->rlweContext);
+    r = RLWE_CrtPoly_CreateFromExist(&sk_ntt_view, self->sk->data, self->sk->dataSize, &self->sk->config.crtConfig,
+                                     &self->context->rlweContext);
     if (r != HIFHE_SUCCESS) {
-        CleanseAndDestroy(&sk_coeff); BGV_GaloisKeys_Destroy(out);
+        RLWE_CrtPoly_Destroy(&sk_coeff);
+        BGV_GaloisKeys_Destroy(out);
         return r;
     }
 
     const RnsBase *base = &self->context->rlweContext.cipherRnsBase;
     uint32_t L = base->size;
-    uint32_t digits = BGV_BV_DigitsForBase(base);
+    uint32_t digits = BGV_KeySwitch_DefaultDigits(base, N, self->context->bgvParameter->plainMod);
+    uint32_t logT = BGV_KeySwitch_LogT(base, digits);
     const uint8_t *seed = BgvContext_GetSeed(&self->context->rlweContext.seedCtx);
     uint64_t gadget[HIFHE_BGV_MAX_CHAIN_LEN];
 
@@ -458,7 +526,9 @@ HIFHE_ERROR BGV_KeyGenerator_GenGaloisKeys(GaloisKeys *out,
         CrtPoly target;
         memset(&target, 0, sizeof(target));
         r = ApplyGaloisToCoeffPoly(&target, &sk_coeff, k, N);
-        if (r != HIFHE_SUCCESS) goto giveup;
+        if (r != HIFHE_SUCCESS) {
+            goto giveup;
+        }
         r = RLWE_CrtPoly_ToNtt(&target);
         if (r != HIFHE_SUCCESS) {
             RLWE_CrtPoly_Destroy(&target);
@@ -472,13 +542,13 @@ HIFHE_ERROR BGV_KeyGenerator_GenGaloisKeys(GaloisKeys *out,
         }
         for (uint32_t li = 0; li < L; ++li) {
             for (uint32_t j = 0; j < digits; ++j) {
-                r = BGV_KeySwitch_GadgetFactor(gadget, base, li, j);
+                r = BGV_KeySwitch_GadgetFactor(gadget, base, li, j, logT);
                 if (r == HIFHE_SUCCESS) {
-                    const uint64_t idx[3] = { k, (uint64_t)li, (uint64_t)j };
-                    r = MakeKeyPiece(&out->entries[i].pieces[li * digits + j],
-                                     &sk_ntt_view, &target, gadget,
-                                     self->context, seed, seed ? HIFHE_CTX_SEED_LEN : 0u,
-                                     "galois", idx, 3u);
+                    /* Width in the label for the same reason as relin keys:
+                     * reused (a, e) under two widths exposes sigma_k(s). */
+                    const uint64_t idx[4] = {k, (uint64_t)li, (uint64_t)j, (uint64_t)logT};
+                    r = MakeKeyPiece(&out->entries[i].pieces[li * digits + j], &sk_ntt_view, &target, gadget,
+                                     self->context, seed, seed ? HIFHE_CTX_SEED_LEN : 0u, "galois", idx, 4u);
                 }
                 if (r != HIFHE_SUCCESS) {
                     RLWE_CrtPoly_Destroy(&target);
@@ -489,13 +559,12 @@ HIFHE_ERROR BGV_KeyGenerator_GenGaloisKeys(GaloisKeys *out,
         RLWE_CrtPoly_Destroy(&target);
     }
     RLWE_CrtPoly_Destroy(&sk_ntt_view);
-    CleanseAndDestroy(&sk_coeff);
+    RLWE_CrtPoly_Destroy(&sk_coeff);
     return HIFHE_SUCCESS;
 
 giveup:
     RLWE_CrtPoly_Destroy(&sk_ntt_view);
-    CleanseAndDestroy(&sk_coeff);
+    RLWE_CrtPoly_Destroy(&sk_coeff);
     BGV_GaloisKeys_Destroy(out);
     return r;
 }
-

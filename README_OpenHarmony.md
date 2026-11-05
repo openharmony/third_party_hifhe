@@ -32,16 +32,17 @@ HiFHE是面向OpenHarmony的同态加密密码库，当前仅构建BGV算法，�
 ```
 third_party_hifhe
 ├── include/                     # 对外公开头文件，OpenHarmony 组件引用 hifhe 时可见
-│   ├── hifhe_provider.h         #   provider 注册与能力查询接口
+│   ├── hifhe.h                  #   原生接口：上下文、编解码、加解密、同态运算、序列化
 │   ├── hifhe_types.h            #   参数 ID、控制命令、预设参数集等类型定义
 │   └── hifhe_err.h              #   错误码定义
 ├── src/                         # 库源码
-│   ├── provider/                #   openHiTLS provider 适配层，注册算法并分发 EAL 调用
+│   ├── api/                     #   原生接口实现与公共抽象
+│   ├── common/                  #   内部公共定义
+│   ├── provider/                #   openHiTLS provider 适配层
 │   │   ├── hifhe_provider.c     #     provider 初始化与能力注册
-│   │   ├── hifhe_pkey_bgv.c     #     BGV 的 PKEY 适配
-│   │   └── hifhe_pkey_ckks.c    #     CKKS 的 PKEY 适配（OpenHarmony 构建未启用）
+│   │   └── hifhe_pkey.c         #     PKEY 适配
 │   ├── bgv/                     #   BGV 算法实现
-│   │   ├── include/             #     BGV 对内对外头文件
+│   │   ├── include/             #     BGV 对外头文件
 │   │   └── src/
 │   │       ├── adapter/         #       适配层：API 转换、ctrl 分发、参数与序列化
 │   │       ├── basic/           #       基础设施：上下文、随机数、向量
@@ -50,9 +51,10 @@ third_party_hifhe
 │   │       └── bgv/             #       BGV 算法层：参数、编解码、加解密、同态运算
 │   └── ckks/                    #   CKKS 算法实现（OpenHarmony 构建未启用）
 ├── cmake/                       # CMake 构建模块与配置模板
-├── testcode/                    # 测试与性能代码
+├── testcode/                    # 测试、示例与性能代码
 │   ├── sdv/                     #   基于 openHiTLS SDV 框架的测试套件
 │   ├── benchmark/               #   性能基准
+│   ├── demo/                    #   使用示例
 │   ├── framework/               #   测试框架
 │   ├── common/                  #   测试公共工具
 │   └── script/                  #   构建与运行脚本
@@ -61,7 +63,7 @@ third_party_hifhe
 └── CMakeLists.txt               # CMake 构建入口
 ```
 
-> OpenHarmony 平台通过 `BUILD.gn` 构建，默认仅编译 BGV 算法（`HIFHE_BGV`）。`include/` 与 `src/bgv/include/` 为对外可见头文件目录。
+> OpenHarmony 平台通过 `BUILD.gn` 构建，默认仅编译 BGV 算法（`HIFHE_ENABLE_BGV`）。`include/` 与 `src/bgv/include/` 为对外可见头文件目录。
 
 ## 功能特性
 
@@ -69,8 +71,8 @@ third_party_hifhe
 
 ### 1. 公共能力
 
-- **算法能力查询**：提供 `HIFHE_GetFeatures` 接口，运行时查询当前动态库编译进哪些算法，便于上层按能力分支调度。
-
+- **原生接口**：提供 `HIFHE_New`、`HIFHE_Encode`、`HIFHE_Encrypt`、`HIFHE_Add`、`HIFHE_Mul`、`HIFHE_Decrypt`、`HIFHE_Serialize`、`HIFHE_Deserialize` 等接口。
+- **provider 适配**：保留 openHiTLS provider 集成能力，支持算法注册与 EAL 调用。
 
 ### 2. 参数与上下文管理
 
@@ -101,7 +103,7 @@ third_party_hifhe
 
 以rk3568平台为例，编译命令为：
 ```bash
-./build.sh --product-name rk3568 --ccache --build-target hifhe
+./build.sh --product-name rk3568 --ccache --build-target libhifhe
 ```
 编译完成后会生成动态库libhifhe.so。
 
@@ -140,9 +142,9 @@ external_deps += [ "hifhe:libhifhe" ]
 使用hifhe相关接口前，需在源文件中引用对应头文件：
 
 ```c
-#include "hifhe_provider.h"   // provider注册、算法标识(HIFHE_PKEY_BGV)、能力查询(HIFHE_GetFeatures)
-#include "hifhe_types.h"      // 参数ID、控制命令(HIFHE_CTRL_BGV_*)、预设参数集(HIFHE_BGV_PRESET)等类型定义
-#include "hifhe_err.h"        // 错误码定义
+#include "hifhe.h"       // 原生接口：上下文、编解码、加解密、同态运算、序列化
+#include "hifhe_types.h" // 参数ID、控制命令(HIFHE_CTRL_BGV_*)、预设参数集(HIFHE_BGV_PRESET)等类型定义
+#include "hifhe_err.h"   // 错误码定义
 ```
 
 系统内部使用HiFHE完成端云查询的隐私与匹配，典型流程如下：

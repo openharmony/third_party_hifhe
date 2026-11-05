@@ -23,29 +23,23 @@ typedef struct BenchCtx_ BenchCtx;
  * benchmark file; CMake selects the file by the same switch.
  *
  * A module calls its algorithm directly, so one built out of the provider
- * must not be named here either: the reference would not link. Both lists
- * below collapse to nothing when their algorithm is off. */
-#ifdef HIFHE_BGV
+ * must not be named here either: the reference would not link. The list
+ * below is empty when BGV is off. */
+#ifdef HIFHE_ENABLE_BGV
+#ifdef HITLS_PROVIDER
 #define BENCHMARK_LIST_BGV(X) \
     X(Kernel)                 \
     X(Bgv)
 #else
+#define BENCHMARK_LIST_BGV(X) X(Kernel)
+#endif
+#else
 #define BENCHMARK_LIST_BGV(X)
 #endif
 
-#ifdef HIFHE_CKKS
-/* No CKKS module yet; add X(Ckks) here with ckks_bench.c. */
-#define BENCHMARK_LIST_CKKS(X)
-#else
-#define BENCHMARK_LIST_CKKS(X)
-#endif
+#define BENCHMARK_LIST(X) BENCHMARK_LIST_BGV(X)
 
-#define BENCHMARK_LIST(X) \
-    BENCHMARK_LIST_BGV(X) \
-    BENCHMARK_LIST_CKKS(X)
-
-#define DECLARE_BENCH_GETTER(name) \
-    const BenchCtx *BenchmarkGet##name(void);
+#define DECLARE_BENCH_GETTER(name) const BenchCtx *BenchmarkGet##name(void);
 
 BENCHMARK_LIST(DECLARE_BENCH_GETTER)
 

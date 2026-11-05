@@ -16,27 +16,22 @@ shape it assumes:
 
 ## Building
 
-Needs `build/libhifhe_provider.so`, so run `build_hifhe.sh` first.
+Links implementation objects directly; no test Provider or extra shared library.
+Kernel runs independently. The Bgv adapter module requires HITLS_PROVIDER.
+These measurements do not measure the native public API.
 
 ```sh
 bash testcode/script/build_benchmark.sh          # build
 bash testcode/script/build_benchmark.sh asan     # build with AddressSanitizer
 bash testcode/script/build_benchmark.sh run      # build, then run everything
 bash testcode/script/build_benchmark.sh clean
-bash testcode/script/build_benchmark.sh --disable bgv   # trim a module set out
+bash testcode/script/build_benchmark.sh --enable bgv
 ```
 
-This configures `testcode/benchmark` standalone and takes a couple of seconds,
-which is what you want between edits. The binary lands in `testcode/output/`.
+The script configures the root build and builds only the benchmark target. The binary lands in `testcode/output/`.
 
-Each module belongs to an algorithm and calls it directly, so it is built only
-when that algorithm is in the provider. The switches follow
-`build/include/hifhe_config.h` by default and can be forced either way, as
-CMake options (`-DHIFHE_BGV=OFF`, `-DHIFHE_CKKS=ON`) or through the script
-(`--enable`/`--disable ckks|bgv`), matching `build_hifhe.sh`. Selecting
-nothing is a configuration error rather than an empty binary: there would be
-nothing to measure. `Kernel` and `Bgv` are both BGV modules; CKKS has none
-yet, so `-DHIFHE_CKKS=ON` alone selects nothing.
+Both `Kernel` and `Bgv` require `HIFHE_BGV=ON`; `Bgv` also requires `HITLS_PROVIDER=ON`.
+The script reuses the library configuration unless `--enable bgv` is specified.
 
 It also builds as part of the SDV tree with `-DBUILD_BENCHMARK=ON`, but that
 path pays for the test-suite generation and compiles the suites at `-O0`. The
@@ -61,10 +56,9 @@ cd testcode/output
 ./hifhe_benchmark -h
 ```
 
-The benchmark modules call `CRYPT_BGV_*` directly rather than through the EAL
-dispatch, so no provider registration is needed. `-P <dir>` (or
-`HIFHE_PROVIDER_PATH`, default `../../build`) is still honoured for the
-footprint report, which does go through the EAL.
+The `Kernel` module works without `HITLS_PROVIDER`. The `Bgv` module and footprint
+report (`-m`) require `HITLS_PROVIDER=ON`. All call the implementation directly;
+no runtime Provider registration or plugin path is needed.
 
 ## Modules
 

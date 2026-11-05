@@ -13,7 +13,7 @@
 #ifndef HIFHE_CONFIG_H
 #define HIFHE_CONFIG_H
 
-#cmakedefine HIFHE_CKKS
-#cmakedefine HIFHE_BGV
+#cmakedefine HITLS_PROVIDER 1
+#cmakedefine HIFHE_ENABLE_BGV
 
 #endif

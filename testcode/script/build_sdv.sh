@@ -24,9 +24,7 @@ for ARG in "$@"; do
             exit 0
             ;;
         clean)
-            cmake -E remove_directory "${HIFHE_ROOT_DIR}/testcode/build"
-            cmake -E remove_directory "${HIFHE_ROOT_DIR}/testcode/framework/gen_test/build"
-            cmake -E remove_directory "${HIFHE_ROOT_DIR}/testcode/output"
+            rm -f "${HIFHE_ROOT_DIR}/testcode/output/"test_suite*
             exit 0
             ;;
         -h|--help)
@@ -37,10 +35,6 @@ for ARG in "$@"; do
     esac
 done
 
-if [[ ! -f "${HIFHE_PROVIDER_DIR}/libhifhe_provider.so" ]]; then
-    echo "Provider not found: ${HIFHE_PROVIDER_DIR}/libhifhe_provider.so" >&2
-    exit 1
-fi
 TEST_SUITES=""
 if [[ -n "${RUN_TESTS}" ]]; then
     IFS='|' read -ra NAMES <<< "${RUN_TESTS}"
@@ -55,11 +49,10 @@ else
     done < <(find "${HIFHE_ROOT_DIR}/testcode/sdv" -name '*.data' -print)
 fi
 
-cmake -E remove_directory "${HIFHE_ROOT_DIR}/testcode/build"
-cmake -S "${HIFHE_ROOT_DIR}/testcode" -B "${HIFHE_ROOT_DIR}/testcode/build" \
-    -DHITLS_ROOT_DIR="${HITLS_ROOT_DIR}" \
-    -DHIFHE_PROVIDER_DIR="${HIFHE_PROVIDER_DIR}" \
+cmake -S "${HIFHE_ROOT_DIR}" -B "${HIFHE_PROVIDER_DIR}" \
+    -DHITLS_ROOT_PATH="${HITLS_ROOT_DIR}" \
+    -DHIFHE_BUILD_TESTS=ON \
     -DHIFHE_ENABLE_ASAN="${HIFHE_ENABLE_ASAN}" \
     -DHIFHE_ENABLE_GCOV="${HIFHE_ENABLE_GCOV}" \
     -DGEN_TEST_FILES="${TEST_SUITES}"
-cmake --build "${HIFHE_ROOT_DIR}/testcode/build" --parallel
+cmake --build "${HIFHE_PROVIDER_DIR}" --parallel

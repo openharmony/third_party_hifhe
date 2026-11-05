@@ -32,13 +32,12 @@ extern "C" {
  * uint64 in the layout Kernel_Ntt_BuildTables produces. The context points at
  * them without copying or freeing, so they must outlive it. NULL computes
  * every table locally. */
-HIFHE_ERROR RLWE_RlweContext_BuildWithTables(RlweContext *out, RlweParameter *param,
-                                           uint64_t *const *tables);
+HIFHE_ERROR RLWE_RlweContext_BuildWithTables(RlweContext *out, RlweParameter *param, uint64_t *const *tables);
 
 /* Access the precomputed NTT or Barrett table for one modulus. The returned
  * pointer is owned by ctx. Do not free it. */
-const NttTables    *RLWE_RlweContext_GetNttTablesByModulus (const RlweContext *ctx, Modulus q);
-const BarrettConst *RLWE_RlweContext_GetBarrettByModulus   (const RlweContext *ctx, Modulus q);
+const NttTables *RLWE_RlweContext_GetNttTablesByModulus(const RlweContext *ctx, Modulus q);
+const BarrettConst *RLWE_RlweContext_GetBarrettByModulus(const RlweContext *ctx, Modulus q);
 
 #ifdef __cplusplus
 }

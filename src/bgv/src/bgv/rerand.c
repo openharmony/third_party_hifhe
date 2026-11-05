@@ -20,10 +20,14 @@
  *
  * Decrypt evaluates sum_k c_k * s^k, so the injected term carries t and
  * vanishes mod t at decode. No public key needed.
+ *
+ * Every component of the input survives in the output, so out - in is a small
+ * multiple of t and pairs the two ciphertexts to any holder of both. This
+ * consumes noise budget; it is not an unlinkability primitive.
  */
 
 #include <string.h>
-#include "bsl_sal.h"
+#include "hifhe_err_internal.h"
 #include "basic/vector.h"
 #include "bgv/evaluator.h"
 #include "bgv/ciphertext.h"
@@ -32,19 +36,26 @@
 
 #define RERAND_NOISE_ETA 2u
 
-HIFHE_ERROR BGV_Evaluator_Rerandomize(Ciphertext *out, const Ciphertext *in,
-                                    const Evaluator *self)
+HIFHE_ERROR BGV_Evaluator_Rerandomize(Ciphertext *out, const Ciphertext *in, const Evaluator *self)
 {
-    if (out == NULL || in == NULL || self == NULL) return HIFHE_NULL_INPUT;
-    if (in->config.ciphertextSize < 2u) return HIFHE_CT_DEGREE_MISMATCH;
+    if (out == NULL || in == NULL || self == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
+    if (in->config.ciphertextSize < 2u) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_CT_DEGREE_MISMATCH);
+        return HIFHE_CT_DEGREE_MISMATCH;
+    }
 
     BGV_Ciphertext_Destroy(out);
     int32_t r = BGV_Ciphertext_Copy(out, in);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
 
     BGVContext *ctx = out->context;
     uint32_t N = ctx->rlweContext.parameter->polyDegree;
-    Modulus  t = ctx->bgvParameter->plainMod;
+    Modulus t = ctx->bgvParameter->plainMod;
 
     Int64Vector e;
     r = Int64Vector_Create(&e, NULL, N);
@@ -66,19 +77,31 @@ HIFHE_ERROR BGV_Evaluator_Rerandomize(Ciphertext *out, const Ciphertext *in,
         /* DRBG, not the context seed: a seeded stream replays. */
         BgvEntropy src = BgvEntropy_Drbg();
         r = Kernel_Sampler_CBD(e.data, N, RERAND_NOISE_ETA, &src);
-        if (r != HIFHE_SUCCESS) break;
+        if (r != HIFHE_SUCCESS) {
+            break;
+        }
         r = RLWE_CrtPoly_SetSigned(&noise, e.data);
-        if (r != HIFHE_SUCCESS) break;
+        if (r != HIFHE_SUCCESS) {
+            break;
+        }
         r = RLWE_CrtPoly_ToNtt(&noise);
-        if (r != HIFHE_SUCCESS) break;
+        if (r != HIFHE_SUCCESS) {
+            break;
+        }
         r = RLWE_CrtPoly_MulScalar(&noise, &noise, t);
-        if (r != HIFHE_SUCCESS) break;
+        if (r != HIFHE_SUCCESS) {
+            break;
+        }
         r = BGV_Ciphertext_AddCrtPolyAt(out, k, &noise);
-        if (r != HIFHE_SUCCESS) break;
+        if (r != HIFHE_SUCCESS) {
+            break;
+        }
     }
 
     RLWE_CrtPoly_Destroy(&noise);
     Int64Vector_Cleanse(&e);
-    if (r != HIFHE_SUCCESS) BGV_Ciphertext_Destroy(out);
+    if (r != HIFHE_SUCCESS) {
+        BGV_Ciphertext_Destroy(out);
+    }
     return r;
 }
