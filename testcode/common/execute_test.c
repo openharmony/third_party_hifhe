@@ -29,8 +29,8 @@ void handleSignal()
 static void PrintCaseName(FILE *logFile, bool showDetail, const char *name)
 {
     // print a minimum of 4 dots
-    int32_t dotCount = (OUTPUT_LINE_LENGTH - (int32_t)strlen(name) >= 4) ?
-        (OUTPUT_LINE_LENGTH - (int32_t)strlen(name)) : 4;
+    int32_t dotCount =
+        (OUTPUT_LINE_LENGTH - (int32_t)strlen(name) >= 4) ? (OUTPUT_LINE_LENGTH - (int32_t)strlen(name)) : 4;
     if (showDetail) {
         Print("%s", name);
         for (int32_t j = 0; j < dotCount; j++) {
@@ -58,7 +58,7 @@ static int ParseArgs(const TestArgs *arg, TestParam *info)
                 return 1;
             }
         } else if (strcmp(arg->arg[i], "char") == 0) {
-            info->param[info->paramCount] = arg->arg[i+1];
+            info->param[info->paramCount] = arg->arg[i + 1];
         } else if (strcmp(arg->arg[i], "Hex") == 0) {
             if (ConvertHex(arg->arg[i + 1], &(info->hexParam[info->hexParamCount])) != 0) {
                 Print("\nERROR: Hex param conversion failed for:\n\"%s\"\n", arg->arg[i + 1]);
@@ -99,10 +99,10 @@ static int PrintCaseNameResult(FILE *logFile, int vectorCount, int skipCount, in
     int failCount = vectorCount - passCount - skipCount;
     if (failCount == 0) {
         Print("%sPASS || Run %-6d testcases, passed: %-6d, skipped: %-6d, failed: %-6d useSec:%-5lu\n", suitePrefix,
-            vectorCount, passCount, skipCount, failCount, time(NULL) - beginTime);
+              vectorCount, passCount, skipCount, failCount, time(NULL) - beginTime);
     } else {
         Print("%sFAIL || Run %-6d testcases, passed: %-6d, skipped: %-6d, failed: %-6d useSec:%-5lu\n", suitePrefix,
-            vectorCount, passCount, skipCount, failCount, time(NULL) - beginTime);
+              vectorCount, passCount, skipCount, failCount, time(NULL) - beginTime);
     }
 
     time_t rawtime;
@@ -111,7 +111,7 @@ static int PrintCaseNameResult(FILE *logFile, int vectorCount, int skipCount, in
     timeinfo = localtime(&rawtime);
     (void)fprintf(logFile, "End time: %s", asctime(timeinfo));
     (void)fprintf(logFile, "Result: Run %d tests, Passed: %d, Skipped: %d, Failed: %d\n", vectorCount, passCount,
-        skipCount, failCount);
+                  skipCount, failCount);
     return failCount;
 }
 
@@ -124,12 +124,9 @@ static int ProcessCases(FILE *logFile, bool showDetail, int targetFuncId)
     volatile int tryNum;
     time_t beginTime = time(NULL);
     struct timespec start, end;
-    if (TestHifheProviderLoad() != 0) {
-        return -1;
-    }
     for (volatile int i = 0; i < g_executeCount; i++) {
         int funcId = strtoul(g_executeCases[i]->arg[0], NULL, 10); // 10
-        if (funcId < 0 || funcId > ((int)(sizeof(test_funcs)/sizeof(TestWrapper)))) {
+        if (funcId < 0 || funcId > ((int)(sizeof(test_funcs) / sizeof(TestWrapper)))) {
             Print("funcId false!\n");
             return 1;
         }
@@ -152,22 +149,22 @@ static int ProcessCases(FILE *logFile, bool showDetail, int targetFuncId)
                 g_testResult.result = TEST_RESULT_SUCCEED;
             }
             tryNum++;
-#ifdef  ASAN
+#ifdef ASAN
             fp(io.param);
 #else
-        // Executing Function
-        if (signal(SIGSEGV, handleSignal) == SIG_ERR) {
-            return -1;
-        }
-        int r = sigsetjmp(env, 1);
-        if (r == 0) {
-            fp(io.param);
-        } else if (r == 1){
-            g_testResult.result = TEST_RESULT_FAILED;
-        }
-        if (isSubProc != 0) {
-            break;
-        }
+            // Executing Function
+            if (signal(SIGSEGV, handleSignal) == SIG_ERR) {
+                return -1;
+            }
+            int r = sigsetjmp(env, 1);
+            if (r == 0) {
+                fp(io.param);
+            } else if (r == 1) {
+                g_testResult.result = TEST_RESULT_FAILED;
+            }
+            if (isSubProc != 0) {
+                break;
+            }
 #endif
         } while ((g_testResult.result == TEST_RESULT_FAILED) && (tryNum < FAIL_TRY_TIMES));
         if (g_testResult.result == TEST_RESULT_SUCCEED) {
@@ -186,9 +183,6 @@ static int ProcessCases(FILE *logFile, bool showDetail, int targetFuncId)
         if (isSubProc != 0) {
             break;
         }
-    }
-    if (TestHifheProviderUnload() != 0) {
-        return -1;
     }
     return PrintCaseNameResult(logFile, vectorCount, skipCount, passCount, beginTime);
 }

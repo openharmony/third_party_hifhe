@@ -9,34 +9,34 @@
  * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  * See the Mulan PSL v2 for more details.
  */
+/*
+ * The allocator every HiFHE module goes through. Defaults to malloc and free,
+ * and an application can take it over with HIFHE_SetMemFuncs.
+ */
 
-#ifndef HIFHE_PROVIDER_H
-#define HIFHE_PROVIDER_H
+#ifndef HIFHE_MEM_H
+#define HIFHE_MEM_H
 
 #include <stdint.h>
-#include "bsl_params.h"
-#include "crypt_eal_provider.h"
+#include "hifhe.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define HIFHE_PKEY_CKKS ((int32_t)0x89000001u)
-#define HIFHE_PKEY_BGV ((int32_t)0x89000002u)
+/* NULL on a zero length or on failure. */
+void *HifheMalloc(uint32_t len);
 
-#define HIFHE_FEATURE_CKKS (1u << 0)
-#define HIFHE_FEATURE_BGV (1u << 1)
+/* Zeroed. NULL on a zero count or length, on num * len overflow, or on failure. */
+void *HifheCalloc(uint32_t num, uint32_t len);
 
-/* Provider attribute, passed to CRYPT_EAL_ProviderPkeyNewCtx. */
-#define HIFHE_PROVIDER_ATTR "provider=hifhe"
+/* A NULL pointer is accepted and ignored. */
+void HifheFree(void *ptr);
 
-uint32_t HIFHE_GetFeatures(void);
-
-int32_t CRYPT_EAL_ProviderInit(CRYPT_EAL_ProvMgrCtx *mgrCtx, BSL_Param *param,
-    CRYPT_EAL_Func *capFuncs, CRYPT_EAL_Func **outFuncs, void **provCtx);
+/* Overwrites len bytes with zero. Not elided when the buffer is then freed. */
+void HifheCleanse(void *ptr, uint32_t len);
 
 #ifdef __cplusplus
 }
 #endif
-
 #endif

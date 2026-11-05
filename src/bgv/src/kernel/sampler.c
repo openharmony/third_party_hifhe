@@ -19,26 +19,36 @@
  *   seeded     SHAKE128(seed || label), replays for the same pair
  */
 
+#include <stdbool.h>
 #include <string.h>
-#include "bsl_sal.h"
+#include "hifhe_mem.h"
+#include "hifhe_err_internal.h"
 #include "kernel/sampler.h"
 #include "basic/rand.h"
 #include "basic/vector.h"
 
 /* DRBG when unseeded, else SHAKE(seed || label || suffix). `suffix` keeps
  * successive refills of one draw apart. */
-static HIFHE_ERROR DrawBytes(uint8_t *dst, uint32_t nBytes, const BgvEntropy *src,
-                           const uint8_t *suffix, uint32_t suffixLen)
+static HIFHE_ERROR DrawBytes(uint8_t *dst, uint32_t nBytes, const BgvEntropy *src, const uint8_t *suffix,
+                             uint32_t suffixLen)
 {
     if (src == NULL || src->seed == NULL || src->seedLen == 0u) {
         return BgvRand_Drbg(dst, nBytes);
     }
-    if (src->label == NULL) return HIFHE_PARAM_INVALID;
+    if (src->label == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
 
     uint8_t ds[HIFHE_DS_MAX + 8u];
     uint32_t n = 0u;
-    while (src->label[n] != 0 && n < HIFHE_DS_MAX) { ds[n] = (uint8_t)src->label[n]; n++; }
-    for (uint32_t i = 0; i < suffixLen && n < sizeof(ds); ++i) ds[n++] = suffix[i];
+    while (src->label[n] != 0 && n < HIFHE_DS_MAX) {
+        ds[n] = (uint8_t)src->label[n];
+        n++;
+    }
+    for (uint32_t i = 0; i < suffixLen && n < sizeof(ds); ++i) {
+        ds[n++] = suffix[i];
+    }
     return BgvRand_Seeded(src->seed, src->seedLen, ds, n, dst, nBytes);
 }
 
@@ -46,41 +56,68 @@ static HIFHE_ERROR DrawBytes(uint8_t *dst, uint32_t nBytes, const BgvEntropy *sr
 static HIFHE_ERROR DrawPool(Uint8Vector *pool, uint32_t nBytes, const BgvEntropy *src)
 {
     int32_t r = Uint8Vector_Create(pool, NULL, nBytes);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     r = DrawBytes(pool->data, nBytes, src, NULL, 0u);
-    if (r != HIFHE_SUCCESS) Uint8Vector_Cleanse(pool);
+    if (r != HIFHE_SUCCESS) {
+        Uint8Vector_Cleanse(pool);
+    }
     return r;
 }
 
 /* Uniform mod q by rejection: mask to ceil(log2 q) bits, retry on cand >= q. */
-HIFHE_ERROR Kernel_Sampler_UniformModQ(uint64_t *out, uint32_t count, Modulus q,
-                                     uint32_t limbIndex, const BgvEntropy *src)
+HIFHE_ERROR Kernel_Sampler_UniformModQ(uint64_t *out, uint32_t count, Modulus q, uint32_t limbIndex,
+                                       const BgvEntropy *src)
 {
-    if (out == NULL || q < 2u) return HIFHE_NULL_INPUT;
+    if (out == NULL || q < 2u) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
 
-    uint32_t bytesPerDraw = 8u;
-    uint64_t mask = ~0ull;
-    /* Smallest mask covering q. */
     uint32_t bits = Kernel_Log2Ceil(q);
-    if (bits < 64u) mask = (1ull << bits) - 1u;
+    uint64_t mask = (bits < 64u) ? ((1ull << bits) - 1u) : ~0ull;
 
-    /* Batch entropy so the per-refill SHAKE init amortizes. */
-    const uint32_t POOL_BYTES = 512u;
-    uint8_t pool[512];
+    /* Seeded draws keep their historic layout (8-byte words, 512-byte
+     * refills), because keys derived from a seed must come out identical.
+     * Unseeded draws are free to read only the bytes the mask keeps and to
+     * refill in large blocks. */
+    bool seeded = (src != NULL && src->seed != NULL && src->seedLen != 0u);
+    uint32_t bytesPerDraw = seeded ? 8u : ((bits + 7u) / 8u);
+    if (bytesPerDraw == 0u) {
+        bytesPerDraw = 1u;
+    }
+    /* The seeded layout fits a small stack buffer; the large unseeded refill
+     * block goes on the heap so callers on small stacks are unaffected. */
+    uint8_t stackPool[512];
+    uint8_t *heapPool = NULL;
+    const uint32_t POOL_BYTES = seeded ? (uint32_t)sizeof(stackPool) : 8192u;
+    uint8_t *pool = stackPool;
+    if (!seeded) {
+        heapPool = (uint8_t *)HifheMalloc(POOL_BYTES);
+        if (heapPool == NULL) {
+            HIFHE_ERR_PUSH_ERROR(HIFHE_MEMORY_ERROR);
+            return HIFHE_MEMORY_ERROR;
+        }
+        pool = heapPool;
+    }
+    int32_t r = HIFHE_SUCCESS;
     uint32_t poolFill = 0u;
-    uint32_t poolIdx  = 0u;
+    uint32_t poolIdx = 0u;
 
     /* The refill index rides after the label, so blocks stay distinct. */
     uint32_t refillIdx = 0u;
 
-    for (uint32_t k = 0; k < count; ) {
+    for (uint32_t k = 0; k < count;) {
         if (poolIdx >= poolFill) {
             /* The refill index keeps one draw's blocks apart; the limb index
              * keeps the limbs of a chain apart. The first limb carries no tag,
              * so single-limb material keeps the stream it has always had. */
             uint8_t sfx[8];
             uint32_t sfxLen = 4u;
-            for (uint32_t b = 0; b < 4u; ++b) sfx[b] = (uint8_t)(refillIdx >> (8u * b));
+            for (uint32_t b = 0; b < 4u; ++b) {
+                sfx[b] = (uint8_t)(refillIdx >> (8u * b));
+            }
             if (limbIndex != 0u) {
                 for (uint32_t b = 0; b < 4u; ++b) {
                     sfx[4u + b] = (uint8_t)(limbIndex >> (8u * b));
@@ -88,10 +125,12 @@ HIFHE_ERROR Kernel_Sampler_UniformModQ(uint64_t *out, uint32_t count, Modulus q,
                 sfxLen = 8u;
             }
             refillIdx++;
-            int32_t r = DrawBytes(pool, POOL_BYTES, src, sfx, sfxLen);
-            if (r != HIFHE_SUCCESS) return r;
+            r = DrawBytes(pool, POOL_BYTES, src, sfx, sfxLen);
+            if (r != HIFHE_SUCCESS) {
+                break;
+            }
             poolFill = POOL_BYTES;
-            poolIdx  = 0u;
+            poolIdx = 0u;
         }
         if (poolIdx + bytesPerDraw > poolFill) {
             /* Not enough for one draw; force refill. */
@@ -99,7 +138,7 @@ HIFHE_ERROR Kernel_Sampler_UniformModQ(uint64_t *out, uint32_t count, Modulus q,
             continue;
         }
         uint64_t cand = 0u;
-        for (uint32_t b = 0; b < 8u; ++b) {
+        for (uint32_t b = 0; b < bytesPerDraw; ++b) {
             cand |= ((uint64_t)pool[poolIdx + b]) << (8u * b);
         }
         poolIdx += bytesPerDraw;
@@ -108,104 +147,185 @@ HIFHE_ERROR Kernel_Sampler_UniformModQ(uint64_t *out, uint32_t count, Modulus q,
             out[k++] = cand;
         }
     }
-    BSL_SAL_CleanseData(pool, POOL_BYTES);
-    return HIFHE_SUCCESS;
+    HifheCleanse(pool, POOL_BYTES);
+    HifheFree(heapPool);
+    return r;
 }
 
-HIFHE_ERROR Kernel_Sampler_Ternary(int64_t *out, uint32_t count,
-                                 const BgvEntropy *src)
+HIFHE_ERROR Kernel_Sampler_Ternary(int64_t *out, uint32_t count, const BgvEntropy *src)
 {
-    if (out == NULL) return HIFHE_NULL_INPUT;
+    if (out == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
 
     /* Two bits per sample: 00, 11 -> 0; 01 -> +1; 10 -> -1.
      * Weights 1/4, 1/2, 1/4 on {-1, 0, +1}. */
     uint32_t needBytes = (count + 3u) / 4u;
     Uint8Vector pool;
     int32_t r = DrawPool(&pool, needBytes, src);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     const uint8_t *buf = pool.data;
 
     for (uint32_t i = 0; i < count; ++i) {
         uint8_t byte = buf[i >> 2];
         uint8_t bits = (byte >> ((i & 3u) << 1u)) & 3u;
         switch (bits) {
-            case 0: out[i] =  0; break;
-            case 1: out[i] =  1; break;
-            case 2: out[i] = -1; break;
-            default:out[i] =  0; break;
+            case 0:
+                out[i] = 0;
+                break;
+            case 1:
+                out[i] = 1;
+                break;
+            case 2:
+                out[i] = -1;
+                break;
+            default:
+                out[i] = 0;
+                break;
         }
     }
     Uint8Vector_Cleanse(&pool);
     return HIFHE_SUCCESS;
 }
 
-HIFHE_ERROR Kernel_Sampler_TernaryFixedWeight(int64_t *out, uint32_t count,
-                                            uint32_t weight,
-                                            const BgvEntropy *src)
+/* Entry codes the shuffle moves: 0 for a zero, and one bit each for the two
+ * signs. Two bits per entry, 32 entries to a word. */
+#define SAMPLER_CODE_MASK 3ull
+#define SAMPLER_CODE_POS  1ull
+#define SAMPLER_CODE_NEG  2ull
+
+HIFHE_ERROR Kernel_Sampler_TernaryFixedWeight(int64_t *out, uint32_t count, uint32_t weight, const BgvEntropy *src)
 {
-    if (out == NULL) return HIFHE_NULL_INPUT;
-    if (count == 0u || weight > count) return HIFHE_PARAM_INVALID;
+    if (out == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
+    if (count == 0u || weight > count) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
 
     /* An odd weight puts the extra nonzero on the +1 side. Splitting into two
      * halves alone would leave weight - 1 of them. An even weight, which is
      * what the callers pass, lays out exactly as before. */
     uint32_t pos = (weight + 1u) >> 1;
     uint32_t neg = weight >> 1;
-    for (uint32_t i = 0; i < pos; ++i) out[i] = 1;
-    for (uint32_t i = 0; i < neg; ++i) out[pos + i] = -1;
-    for (uint32_t i = pos + neg; i < count; ++i) out[i] = 0;
+    for (uint32_t i = 0; i < pos; ++i) {
+        out[i] = 1;
+    }
+    for (uint32_t i = 0; i < neg; ++i) {
+        out[pos + i] = -1;
+    }
+    for (uint32_t i = pos + neg; i < count; ++i) {
+        out[i] = 0;
+    }
 
     /* This sampler drives the stream directly instead of going through
      * DrawBytes, so it has to enforce the same contract: a seeded draw
      * carries a label, and the stream copies a full seed. */
-    if (src != NULL && src->seed != NULL &&
-        (src->label == NULL || src->seedLen != HIFHE_RAND_SEED_BYTES)) {
+    if (src != NULL && src->seed != NULL && (src->label == NULL || src->seedLen != HIFHE_RAND_SEED_BYTES)) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
         return HIFHE_PARAM_INVALID;
     }
 
+    /* Entries are 0, 1 and -1, so the shuffle runs on two bits each, packed
+     * 32 to a word into the head of `out`. Packing word w reads out[32w] and
+     * above, so it never reads a slot a previous word overwrote. */
+    uint64_t *packed = (uint64_t *)out;
+    uint32_t words = (count + 31u) >> 5;
+    for (uint32_t w = 0; w < words; ++w) {
+        uint64_t acc = 0u;
+        uint32_t base = w << 5;
+        uint32_t n = (count - base < 32u) ? count - base : 32u;
+        for (uint32_t b = 0; b < n; ++b) {
+            int64_t v = out[base + b];
+            uint64_t code = (v > 0) ? SAMPLER_CODE_POS : ((v < 0) ? SAMPLER_CODE_NEG : 0u);
+            acc |= code << (2u * b);
+        }
+        packed[w] = acc;
+    }
+
     /* Fisher-Yates walking down. The i == 1 step swaps a slot with itself
-     * but still consumes a word; dropping it shifts every later draw. */
+     * but still consumes a word; dropping it shifts every later draw.
+     *
+     * The draw index is secret. Each step reads and writes every word that
+     * holds a slot below i and selects the one that moves by mask, so the
+     * access pattern depends on i alone. */
     BgvRandStream stream;
-    BgvRandStream_Init(&stream, (src != NULL) ? src->seed : NULL,
-                       (src != NULL) ? src->label : NULL);
+    BgvRandStream_Init(&stream, (src != NULL) ? src->seed : NULL, (src != NULL) ? src->label : NULL);
     HIFHE_ERROR r = HIFHE_SUCCESS;
     for (uint32_t i = count; i > 0u; --i) {
         uint64_t w = 0u;
         r = BgvRandStream_U64(&stream, &w);
-        if (r != HIFHE_SUCCESS) break;
-        uint64_t j = w % (uint64_t)i;
-        int64_t  t = out[i - 1u];
-        out[i - 1u] = out[j];
-        out[j]      = t;
+        if (r != HIFHE_SUCCESS) {
+            break;
+        }
+        uint32_t j = (uint32_t)(w % (uint64_t)i);
+        uint32_t jWord = j >> 5, jShift = (j & 31u) << 1;
+        uint32_t iWord = (i - 1u) >> 5, iShift = ((i - 1u) & 31u) << 1;
+        uint64_t keep = (packed[iWord] >> iShift) & SAMPLER_CODE_MASK;
+        uint64_t take = 0u;
+        for (uint32_t k = 0; k <= iWord; ++k) {
+            uint64_t m = 0u - (uint64_t)(k == jWord);
+            uint64_t v = packed[k];
+            take |= (v >> jShift) & SAMPLER_CODE_MASK & m;
+            packed[k] = (v & ~((SAMPLER_CODE_MASK << jShift) & m)) | ((keep << jShift) & m);
+        }
+        packed[iWord] = (packed[iWord] & ~(SAMPLER_CODE_MASK << iShift)) | (take << iShift);
     }
     BgvRandStream_Cleanse(&stream);
-    return r;
+    if (r != HIFHE_SUCCESS) {
+        HifheCleanse(out, count * (uint32_t)sizeof(int64_t));
+        return r;
+    }
+
+    /* Unpack downwards: out[i] overwrites the word holding slots 32i and
+     * above, which this loop has already read. */
+    for (uint32_t i = count; i-- > 0u;) {
+        uint64_t code = (packed[i >> 5] >> (2u * (i & 31u))) & SAMPLER_CODE_MASK;
+        out[i] = (int64_t)(code & SAMPLER_CODE_POS) - (int64_t)(code >> 1);
+    }
+    return HIFHE_SUCCESS;
 }
 
 /* CBD: 2*eta bits per sample, popcount(lo) - popcount(hi). */
-HIFHE_ERROR Kernel_Sampler_CBD(int64_t *out, uint32_t count, uint32_t eta,
-                             const BgvEntropy *src)
+HIFHE_ERROR Kernel_Sampler_CBD(int64_t *out, uint32_t count, uint32_t eta, const BgvEntropy *src)
 {
-    if (out == NULL) return HIFHE_NULL_INPUT;
-    if (eta == 0u || eta > 8u) return HIFHE_PARAM_INVALID;
+    if (out == NULL) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_NULL_INPUT);
+        return HIFHE_NULL_INPUT;
+    }
+    if (eta == 0u || eta > 8u) {
+        HIFHE_ERR_PUSH_ERROR(HIFHE_PARAM_INVALID);
+        return HIFHE_PARAM_INVALID;
+    }
 
     uint32_t bitsPerSample = 2u * eta;
     uint32_t needBytes = (count * bitsPerSample + 7u) / 8u;
     Uint8Vector pool;
     int32_t r = DrawPool(&pool, needBytes, src);
-    if (r != HIFHE_SUCCESS) return r;
+    if (r != HIFHE_SUCCESS) {
+        return r;
+    }
     const uint8_t *buf = pool.data;
 
     uint32_t mask = (1u << eta) - 1u;
     for (uint32_t i = 0; i < count; ++i) {
         uint32_t bitOff = i * bitsPerSample;
         uint32_t byteOff = bitOff >> 3;
-        uint32_t shift   = bitOff & 7u;
+        uint32_t shift = bitOff & 7u;
         /* Up to 24 bits; eta <= 8 so bitsPerSample <= 16. */
         uint32_t word = 0u;
         word |= (uint32_t)buf[byteOff];
-        if (byteOff + 1u < needBytes) word |= ((uint32_t)buf[byteOff + 1]) << 8;
-        if (byteOff + 2u < needBytes) word |= ((uint32_t)buf[byteOff + 2]) << 16;
+        if (byteOff + 1u < needBytes) {
+            word |= ((uint32_t)buf[byteOff + 1]) << 8;
+        }
+        if (byteOff + 2u < needBytes) {
+            word |= ((uint32_t)buf[byteOff + 2]) << 16;
+        }
         word >>= shift;
         uint32_t lo = word & mask;
         uint32_t hi = (word >> eta) & mask;
@@ -220,4 +340,3 @@ HIFHE_ERROR Kernel_Sampler_CBD(int64_t *out, uint32_t count, uint32_t eta,
     Uint8Vector_Cleanse(&pool);
     return HIFHE_SUCCESS;
 }
-

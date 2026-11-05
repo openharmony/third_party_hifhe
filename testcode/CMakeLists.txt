@@ -9,27 +9,13 @@
 # See the Mulan PSL v2 for more details.
 
 cmake_minimum_required(VERSION 3.16)
-project(hifhe_test C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-set(HIFHE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
-set(HIFHE_PROVIDER_DIR "${HIFHE_ROOT}/build" CACHE PATH "HiFHE provider build directory")
-set(HITLS_LIB_DIR "${HITLS_ROOT_DIR}/build" CACHE PATH "openHiTLS library directory")
-option(HIFHE_ENABLE_ASAN "Enable AddressSanitizer" OFF)
-option(HIFHE_ENABLE_GCOV "Enable coverage" OFF)
-
+set(HIFHE_ROOT "${PROJECT_SOURCE_DIR}")
+set(HITLS_ROOT_DIR "${HITLS_ROOT_PATH}")
 find_package(Threads REQUIRED)
-find_library(HITLS_CRYPTO_LIB hitls_crypto PATHS "${HITLS_LIB_DIR}" NO_DEFAULT_PATH)
-find_library(HITLS_BSL_LIB hitls_bsl PATHS "${HITLS_LIB_DIR}" NO_DEFAULT_PATH)
-find_library(HIFHE_PROVIDER_LIB hifhe_provider PATHS "${HIFHE_PROVIDER_DIR}" NO_DEFAULT_PATH)
-foreach(LIB HITLS_CRYPTO_LIB HITLS_BSL_LIB HIFHE_PROVIDER_LIB)
-    if(NOT ${LIB})
-        message(FATAL_ERROR "Required library ${LIB} not found")
-    endif()
-endforeach()
-
 add_compile_options(-Wall -Wextra -Werror -Wno-enum-conversion)
 if(HIFHE_ENABLE_ASAN)
     add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
@@ -54,9 +40,10 @@ ExternalProject_Add(gen_testcase
     EXCLUDE_FROM_ALL TRUE
 )
 
-option(BUILD_BENCHMARK "Build the benchmark alongside the test suites" OFF)
+option(BUILD_DEMO "Build the demos alongside the test suites" OFF)
 
 add_subdirectory(sdv)
-if(BUILD_BENCHMARK)
-    add_subdirectory(benchmark)
+if(BUILD_DEMO)
+    enable_testing()
+    add_subdirectory(demo)
 endif()

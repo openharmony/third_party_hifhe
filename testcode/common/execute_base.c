@@ -14,11 +14,11 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#define BUF_SIZE (65536 * 17)
-#define MAX_RAND_SIZE (1024 * 16)
-#define MAX_PATH 1024
-#define MAX_FILE_NAME 200
-#define MAX_IN_CASES 100000
+#define BUF_SIZE           (65536 * 17)
+#define MAX_RAND_SIZE      (1024 * 16)
+#define MAX_PATH           1024
+#define MAX_FILE_NAME      200
+#define MAX_IN_CASES       100000
 #define OUTPUT_LINE_LENGTH 60
 
 #ifdef FAIL_REPEAT_RUN
@@ -28,8 +28,8 @@
 #endif
 
 #define FUNCTION_LOG_FORMAT "./log/%s.%s.log"
-#define SUITE_LOG_FORMAT "./log/%s.log"
-#define LOCAL_DIR "./"
+#define SUITE_LOG_FORMAT    "./log/%s.log"
+#define LOCAL_DIR           "./"
 
 typedef struct {
     char buf[MAX_DATA_LINE_LEN];
@@ -54,7 +54,7 @@ static int ConvertStringCase(const TestArgs *arg)
 {
     for (uint32_t i = 1; i < arg->argLen; i += 2) {
         if (strcmp(arg->arg[i], "char") == 0 || strcmp(arg->arg[i], "Hex") == 0) {
-            if (ConvertString((char **)&(arg->arg[i+1])) != 0) {
+            if (ConvertString((char **)&(arg->arg[i + 1])) != 0) {
                 return 1;
             }
         }
@@ -90,8 +90,8 @@ static int LoadDataFile(const char *fileName)
             rt = -1;
             goto EXIT;
         }
-        if (SplitArguments(g_executeCases[i]->buf, strlen(g_executeCases[i]->buf),
-            g_executeCases[i]->arg, &(g_executeCases[i]->argLen)) != 0) {
+        if (SplitArguments(g_executeCases[i]->buf, strlen(g_executeCases[i]->buf), g_executeCases[i]->arg,
+                           &(g_executeCases[i]->argLen)) != 0) {
             free(g_executeCases[i]);
             rt = -1;
             goto EXIT;

@@ -17,18 +17,18 @@
 
 #define INCLUDE_BASE "/* INCLUDE_BASE"
 #define BEGIN_HEADER "/* BEGIN_HEADER */"
-#define END_HEADER "/* END_HEADER */"
-#define BEGIN_CASE "/* BEGIN_CASE */"
-#define END_CASE "/* END_CASE */"
+#define END_HEADER   "/* END_HEADER */"
+#define BEGIN_CASE   "/* BEGIN_CASE */"
+#define END_CASE     "/* END_CASE */"
 
-#define PRINT_TESTSUITES_TAG "</testsuites>\n"
-#define PRINT_TESTSUITE_TAG "  </testsuite>\n"
-#define PRINT_TESTCASE_TAG "    </testcase>\n"
+#define PRINT_TESTSUITES_TAG    "</testsuites>\n"
+#define PRINT_TESTSUITE_TAG     "  </testsuite>\n"
+#define PRINT_TESTCASE_TAG      "    </testcase>\n"
 #define PRINT_TESTCASE_LIST_TAG "    <testcase name=\"%s\" status=\"run\" time=\"0\" classname=\"%s\" />\n"
-#define PRINT_FAILURE_TAG "      <failure message=\"failed\" type=\"\" />\n"
+#define PRINT_FAILURE_TAG       "      <failure message=\"failed\" type=\"\" />\n"
 
 #define LINE_BREAK_SYMBOL '\n'
-#define LINE_HEAD_SYMBOL '\r'
+#define LINE_HEAD_SYMBOL  '\r'
 
 FunctionTable g_testFunc[MAX_TEST_FUCNTION_COUNT];
 int g_testFuncCount = 0;
@@ -159,8 +159,7 @@ int SplitArguments(char *inStr, uint32_t inLen, char **outParam, uint32_t *param
                 count++;
             }
             if (count > *paramLen) {
-                printf("Exceed maximum param limit, expect num %u, actual num %u\n",
-                    *paramLen, count);
+                printf("Exceed maximum param limit, expect num %u, actual num %u\n", *paramLen, count);
                 return 1;
             }
             in[cur] = '\0';
@@ -195,16 +194,15 @@ int CheckTag(char *in, uint32_t len)
         (strncmp(cur, BEGIN_HEADER, beginHeaderLen) == 0)) {
         return TAG_BEGIN_HEADER;
     } else if ((len >= endHeaderLen) && (strlen(cur) >= endHeaderLen) &&
-        (strncmp(cur, END_HEADER, endHeaderLen) == 0)) {
+               (strncmp(cur, END_HEADER, endHeaderLen) == 0)) {
         return TAG_END_HEADER;
     } else if ((len >= beginCaseLen) && (strlen(cur) >= beginCaseLen) &&
-        (strncmp(cur, BEGIN_CASE, beginCaseLen) == 0)) {
+               (strncmp(cur, BEGIN_CASE, beginCaseLen) == 0)) {
         return TAG_BEGIN_CASE;
-    } else if ((len >= endCaseLen) && (strlen(cur) >= endCaseLen) &&
-        (strncmp(cur, END_CASE, endCaseLen) == 0)) {
+    } else if ((len >= endCaseLen) && (strlen(cur) >= endCaseLen) && (strncmp(cur, END_CASE, endCaseLen) == 0)) {
         return TAG_END_CASE;
     } else if ((len >= includeBaseLen) && (strlen(cur) >= includeBaseLen) &&
-        (strncmp(cur, INCLUDE_BASE, includeBaseLen) == 0)) {
+               (strncmp(cur, INCLUDE_BASE, includeBaseLen) == 0)) {
         return TAG_INCLUDE_BASE;
     }
     return TAG_NOT_TAG;
@@ -267,7 +265,7 @@ static int CheckType(const char *in, const uint32_t cur, const uint32_t prev, in
 }
 
 int ReadFunction(const char *in, const uint32_t inLen, char *outFuncName, uint32_t outLen, int argv[MAX_ARGUMENT_COUNT],
-    uint32_t *argCount)
+                 uint32_t *argCount)
 {
     uint32_t cur = 0;
     uint32_t prev = 0;
@@ -407,12 +405,11 @@ int GenFunctionWrapper(FILE *file, FunctionTable *function)
             }
         }
     }
-    ret = fprintf(file,
-        ");\n"
-        "#if defined(HITLS_BSL_ERR)\n"
-        "    BSL_ERR_ClearError();\n"
-        "#endif\n"
-        "}\n\n");
+    ret = fprintf(file, ");\n"
+                        "#if defined(HITLS_BSL_ERR)\n"
+                        "    BSL_ERR_ClearError();\n"
+                        "#endif\n"
+                        "}\n\n");
     if (ret < 0) {
         return 1;
     }
@@ -561,7 +558,7 @@ static int IncludeBase(char *line, uint32_t len, FILE *outFile, const char *dir)
     *end = '\0';
 
     char fileBuf[MAX_FILE_PATH_LEN];
-    
+
     int ret = snprintf(fileBuf, MAX_FILE_PATH_LEN, BASE_FILE_FORMAT, dir, name);
     if (ret < 0 || ret >= MAX_FILE_PATH_LEN) {
         return 1;
@@ -573,7 +570,6 @@ static int IncludeBase(char *line, uint32_t len, FILE *outFile, const char *dir)
         return 1;
     }
 
-    
     char buf[MAX_FUNCTION_LINE_LEN];
     while (ReadLine(fpBase, buf, MAX_FUNCTION_LINE_LEN, 0, 0) == 0) {
         ret = fprintf(outFile, "%s\n", buf);
@@ -703,7 +699,7 @@ int GenDatax(FILE *inFile, FILE *outFile)
 
         if (paramLen != g_testFunc[funcId].argCount + 1) {
             Print("******\nERROR: Generate datax failed: invalid argument count for function %s at testcase:\n",
-                param[0]);
+                  param[0]);
             Print("%s\n", title);
             return 1;
         }
@@ -863,7 +859,6 @@ int SplitHex(Hex *src, Hex *dest, int max)
     }
 }
 
-
 int SplitHexRand(Hex *src, Hex *dest, int max)
 {
     uint32_t left = src->len;
@@ -952,10 +947,9 @@ int ScanFunctionFile(FILE *fpIn, FILE *fpOut, const char *dir)
     }
 
     /* Optional: auto clear BSL error stack after each wrapper finishes. */
-    if (fprintf(fpOut,
-        "\n#if defined(HITLS_BSL_ERR)\n"
-        "#include \"bsl_err.h\"\n"
-        "#endif\n\n") < 0) {
+    if (fprintf(fpOut, "\n#if defined(HITLS_BSL_ERR)\n"
+                       "#include \"bsl_err.h\"\n"
+                       "#endif\n\n") < 0) {
         return 1;
     }
 
@@ -1141,14 +1135,12 @@ static int GenResultFile(FILE *in, FILE *out, TestSuiteResult result[MAX_SUITE_C
     }
     (void)fprintf(out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     (void)fprintf(out, "<testsuites tests=\"%d\" failures=\"%d\" disabled=\"%d\" errors=\"0\" ", totalTests,
-        totalTests - totalPass - totalSkip, totalSkip);
+                  totalTests - totalPass - totalSkip, totalSkip);
     (void)fprintf(out, "timestamp=\"0000-00-00T00:00:00\" time=\"0\" name=\"AllTests\">\n");
 
     for (int i = 0; i < testSuiteCount; i++) {
-        (void)fprintf(out,
-            "  <testsuite name=\"%s\" tests=\"%d\" skips = \"%d\" failures=\"%d\" ",
-            result[i].name, result[i].total, result[i].skip,
-            result[i].total - result[i].pass - result[i].skip);
+        (void)fprintf(out, "  <testsuite name=\"%s\" tests=\"%d\" skips = \"%d\" failures=\"%d\" ", result[i].name,
+                      result[i].total, result[i].skip, result[i].total - result[i].pass - result[i].skip);
         (void)fprintf(out, "disabled=\"0\" errors=\"0\" time=\"0\">\n");
 
         for (int j = 0; j < result[i].line; j++) {

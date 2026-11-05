@@ -20,11 +20,14 @@ import("//build/ohos.gni")
 # include/crypto), which are exposed by the openHiTLS targets' public configs,
 # so no openHiTLS internal directories are referenced here.
 # ---------------------------------------------------------------------------
-hifhe_defines = [ "HIFHE_BGV" ]
+hifhe_defines = [
+    "HIFHE_ENABLE_BGV",
+    "__FILENAME__=__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__",
+]
 
 hifhe_include_dirs = [
     "include",
-    "src/provider",
+    "src/common",
     "src/bgv/include",
     "src/bgv/src",
     "src/bgv/src/include",
@@ -34,9 +37,11 @@ hifhe_include_dirs = [
 # Source lists.
 # ---------------------------------------------------------------------------
 hifhe_sources = [
-    "src/provider/hifhe_provider.c",
-    "src/provider/hifhe_pkey_bgv.c",
+    "src/api/hifhe_api.c",
+    "src/common/hifhe_err_stack.c",
+    "src/common/hifhe_mem.c",
     "src/bgv/src/adapter/bgv_adapter_api.c",
+    "src/bgv/src/adapter/bgv_object.c",
     "src/bgv/src/adapter/bgv_adapter_core.c",
     "src/bgv/src/adapter/bgv_adapter_ctrl.c",
     "src/bgv/src/adapter/bgv_adapter_para.c",
@@ -78,8 +83,8 @@ config("hifhe_private_config") {
     defines = hifhe_defines
     cflags = [
         "-fPIC",
-        # The provider is loaded at runtime through dlopen, keep its symbols
-        # visible even if the global build defaults to hidden visibility.
+        # Keep the public HiFHE API visible even if the global build defaults
+        # to hidden visibility.
         "-fvisibility=default",
         "-Wno-int-conversion",
     ]
@@ -117,6 +122,7 @@ ohos_shared_library("libhifhe") {
         "openhitls:openhitls_crypto",
     ]
     public_configs = [ ":hifhe_public_config" ]
+    version_script = "cmake/hifhe.exports"
     install_images = [
         "system",
         "updater",

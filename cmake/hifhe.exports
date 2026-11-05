@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2026 openHiTLS. All Rights Reserved.
+ * HiFHE is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ */
+
+HIFHE_1.0 {
+    global:
+        HIFHE_ErrPeekError;
+        HIFHE_ErrPeekLastError;
+        HIFHE_SetMemFuncs;
+        HIFHE_New;
+        HIFHE_Free;
+        HIFHE_SetParaById;
+        HIFHE_Ctrl;
+        HIFHE_KeyGen;
+        HIFHE_HETextFree;
+        HIFHE_Encode;
+        HIFHE_Encrypt;
+        HIFHE_Add;
+        HIFHE_Mul;
+        HIFHE_Decrypt;
+        HIFHE_Decode;
+        HIFHE_Serialize;
+        HIFHE_Deserialize;
+        HIFHE_ExportPubKey;
+        HIFHE_ExportPrvKey;
+        HIFHE_ImportPubKey;
+        HIFHE_ImportPrvKey;
+        CRYPT_EAL_ProviderInit;
+    local: *;
+};

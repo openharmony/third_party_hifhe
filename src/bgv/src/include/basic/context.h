@@ -31,9 +31,9 @@ typedef struct {
     uint8_t hasSeed;
 } BgvContext;
 
-void       BgvContext_Init      (BgvContext *ctx);
-HIFHE_ERROR BgvContext_SetSeed   (BgvContext *ctx, const uint8_t *seed, uint32_t seedLen);
-void       BgvContext_ClearSeed (BgvContext *ctx);
+void BgvContext_Init(BgvContext *ctx);
+HIFHE_ERROR BgvContext_SetSeed(BgvContext *ctx, const uint8_t *seed, uint32_t seedLen);
+void BgvContext_ClearSeed(BgvContext *ctx);
 
 static inline const uint8_t *BgvContext_GetSeed(const BgvContext *ctx)
 {

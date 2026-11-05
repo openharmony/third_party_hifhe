@@ -35,7 +35,6 @@ if [[ ! -x "${BENCH_BIN}" ]]; then
     exit 1
 fi
 
-export HIFHE_PROVIDER_PATH="${HIFHE_PROVIDER_DIR}"
 export LD_LIBRARY_PATH="${HIFHE_PROVIDER_DIR}:${HITLS_ROOT_DIR}/build${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
 cd "${HIFHE_ROOT_DIR}/testcode/output"

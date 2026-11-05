@@ -30,16 +30,14 @@ extern "C" {
 
 /* Find a `bits`-wide prime q = 1 mod 2*polyDegree, skipping anything in
  * `avoid[0..avoidLen)`. HIFHE_PARAM_INVALID if the search is exhausted. */
-HIFHE_ERROR Kernel_Prime_FindProth(Modulus *out,
-                                 uint32_t bits, uint32_t polyDegree,
-                                 const Modulus *avoid, uint32_t avoidLen);
+HIFHE_ERROR Kernel_Prime_FindProth(Modulus *out, uint32_t bits, uint32_t polyDegree, const Modulus *avoid,
+                                   uint32_t avoidLen);
 
 /* Deterministic over the whole uint64 range. */
 bool Kernel_Prime_IsPrime(uint64_t n);
 
 /* Primitive 2N-th root of unity in F_q. HIFHE_PARAM_INVALID if none. */
-HIFHE_ERROR Kernel_Prime_PrimitiveRoot2N(uint64_t *out,
-                                       Modulus q, uint32_t polyDegree);
+HIFHE_ERROR Kernel_Prime_PrimitiveRoot2N(uint64_t *out, Modulus q, uint32_t polyDegree);
 
 #ifdef __cplusplus
 }

@@ -23,10 +23,6 @@ extern "C" {
 
 void TestMemInit(void);
 
-int32_t TestHifheProviderLoad(void);
-
-int32_t TestHifheProviderUnload(void);
-
 int TestRandInit(void);
 
 int TestRandInitEx(void *libCtx);
@@ -72,18 +68,17 @@ int32_t TestSimpleRand(uint8_t *buff, uint32_t len);
 int32_t TestSimpleRandEx(void *libCtx, uint8_t *buff, uint32_t len);
 int32_t TestSimpleRandExSelfCheck(void *libCtx, uint8_t *buff, uint32_t len);
 
-
 #ifdef __aarch64__
-#define AARCH64_PUT_CANARY()                                          \
+#define AARCH64_PUT_CANARY()                                         \
     double canaryd = 1.1;                                            \
-    register double d8 asm("d8");                                     \
-    register double d9 asm("d9");                                     \
-    register double d10 asm("d10");                                   \
-    register double d11 asm("d11");                                   \
-    register double d12 asm("d12");                                   \
-    register double d13 asm("d13");                                   \
-    register double d14 asm("d14");                                   \
-    register double d15 asm("d15");                                   \
+    register double d8 asm("d8");                                    \
+    register double d9 asm("d9");                                    \
+    register double d10 asm("d10");                                  \
+    register double d11 asm("d11");                                  \
+    register double d12 asm("d12");                                  \
+    register double d13 asm("d13");                                  \
+    register double d14 asm("d14");                                  \
+    register double d15 asm("d15");                                  \
     asm volatile("fmov %d0, %d1 \n\t" : "=w"(d8) : "w"(canaryd) :);  \
     asm volatile("fmov %d0, %d1 \n\t" : "=w"(d9) : "w"(canaryd) :);  \
     asm volatile("fmov %d0, %d1 \n\t" : "=w"(d10) : "w"(canaryd) :); \
@@ -92,26 +87,26 @@ int32_t TestSimpleRandExSelfCheck(void *libCtx, uint8_t *buff, uint32_t len);
     asm volatile("fmov %d0, %d1 \n\t" : "=w"(d13) : "w"(canaryd) :); \
     asm volatile("fmov %d0, %d1 \n\t" : "=w"(d14) : "w"(canaryd) :); \
     asm volatile("fmov %d0, %d1 \n\t" : "=w"(d15) : "w"(canaryd) :); \
-    long canaryx = 0x12345678;                                        \
-    register int x19 asm("x19");                                      \
-    register int x20 asm("x20");                                      \
-    register int x21 asm("x21");                                      \
-    register int x22 asm("x22");                                      \
-    register int x23 asm("x23");                                      \
-    register int x24 asm("x24");                                      \
-    register int x25 asm("x25");                                      \
-    register int x26 asm("x26");                                      \
-    register int x27 asm("x27");                                      \
-    register int x28 asm("x28");                                      \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x19) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x20) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x21) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x22) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x23) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x24) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x25) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x26) : "r"(canaryx) :);   \
-    asm volatile("mov %x0, %x1 \n\t" : "=r"(x27) : "r"(canaryx) :);   \
+    long canaryx = 0x12345678;                                       \
+    register int x19 asm("x19");                                     \
+    register int x20 asm("x20");                                     \
+    register int x21 asm("x21");                                     \
+    register int x22 asm("x22");                                     \
+    register int x23 asm("x23");                                     \
+    register int x24 asm("x24");                                     \
+    register int x25 asm("x25");                                     \
+    register int x26 asm("x26");                                     \
+    register int x27 asm("x27");                                     \
+    register int x28 asm("x28");                                     \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x19) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x20) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x21) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x22) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x23) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x24) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x25) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x26) : "r"(canaryx) :);  \
+    asm volatile("mov %x0, %x1 \n\t" : "=r"(x27) : "r"(canaryx) :);  \
     asm volatile("mov %x0, %x1 \n\t" : "=r"(x28) : "r"(canaryx) :);
 
 #define AARCH64_CHECK_CANARY()   \

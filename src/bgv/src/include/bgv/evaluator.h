@@ -32,36 +32,28 @@ extern "C" {
 #endif
 
 typedef struct {
-    BGVContext       *context;   /* not owned */
-    const RelinKeys  *relinKeys; /* not owned; may be NULL */
-    const GaloisKeys *galoisKeys;/* not owned; may be NULL */
+    BGVContext *context; /* not owned */
+    const RelinKeys *relinKeys; /* not owned; may be NULL */
+    const GaloisKeys *galoisKeys; /* not owned; may be NULL */
 } Evaluator;
 
-HIFHE_ERROR BGV_Evaluator_Create (Evaluator *self, BGVContext *ctx,
-                                 const RelinKeys *rlk, const GaloisKeys *glk);
+HIFHE_ERROR BGV_Evaluator_Create(Evaluator *self, BGVContext *ctx, const RelinKeys *rlk, const GaloisKeys *glk);
 HIFHE_ERROR BGV_Evaluator_Destroy(Evaluator *self);
 
 /* ---- unary ---- */
-HIFHE_ERROR BGV_Evaluator_Neg      (Ciphertext *out, const Ciphertext *a,
-                                   const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_Neg(Ciphertext *out, const Ciphertext *a, const Evaluator *self);
 
 /* ---- add ---- */
-HIFHE_ERROR BGV_Evaluator_AddCtCt  (Ciphertext *out, const Ciphertext *a,
-                                   const Ciphertext *b, const Evaluator *self);
-HIFHE_ERROR BGV_Evaluator_AddCtPt  (Ciphertext *out, const Ciphertext *a,
-                                   const Plaintext *b, const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_AddCtCt(Ciphertext *out, const Ciphertext *a, const Ciphertext *b, const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_AddCtPt(Ciphertext *out, const Ciphertext *a, const Plaintext *b, const Evaluator *self);
 
 /* ---- multiply ---- */
-HIFHE_ERROR BGV_Evaluator_MulCtPt      (Ciphertext *out, const Ciphertext *a,
-                                       const Plaintext *b, const Evaluator *self);
-HIFHE_ERROR BGV_Evaluator_MulCtScalar  (Ciphertext *out, const Ciphertext *a,
-                                       uint64_t x, const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_MulCtPt(Ciphertext *out, const Ciphertext *a, const Plaintext *b, const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_MulCtScalar(Ciphertext *out, const Ciphertext *a, uint64_t x, const Evaluator *self);
 /* ct*ct: produces a size-3 ciphertext; call Relinearize afterwards. */
-HIFHE_ERROR BGV_Evaluator_MulCtCt      (Ciphertext *out, const Ciphertext *a,
-                                       const Ciphertext *b, const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_MulCtCt(Ciphertext *out, const Ciphertext *a, const Ciphertext *b, const Evaluator *self);
 
-HIFHE_ERROR BGV_Evaluator_Relinearize  (Ciphertext *out, const Ciphertext *in,
-                                       const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_Relinearize(Ciphertext *out, const Ciphertext *in, const Evaluator *self);
 
 /* ---- rotation (Galois) ----
  * sigma_k: X -> X^k, k = 3^step mod 2N. Effect on the slots depends on
@@ -74,18 +66,14 @@ HIFHE_ERROR BGV_Evaluator_Relinearize  (Ciphertext *out, const Ciphertext *in,
 /* k = 3^step mod 2N, inverted for a negative step. 3 generates
  * (Z/2NZ)* / <-1> for power-of-two N. */
 uint64_t BGV_GaloisEltForStep(int32_t step, uint32_t N);
-HIFHE_ERROR BGV_Evaluator_RotateByStep (Ciphertext *out, const Ciphertext *in,
-                                       int32_t steps, const Evaluator *self);
-HIFHE_ERROR BGV_Evaluator_RotateByElt  (Ciphertext *out, const Ciphertext *in,
-                                       uint64_t galoisElt, const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_RotateByStep(Ciphertext *out, const Ciphertext *in, int32_t steps, const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_RotateByElt(Ciphertext *out, const Ciphertext *in, uint64_t galoisElt, const Evaluator *self);
 
 /* ---- level ops ---- */
-HIFHE_ERROR BGV_Evaluator_ModSwitch    (Ciphertext *out, const Ciphertext *in,
-                                       const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_ModSwitch(Ciphertext *out, const Ciphertext *in, const Evaluator *self);
 
 /* ---- rerandomization ---- */
-HIFHE_ERROR BGV_Evaluator_Rerandomize  (Ciphertext *out, const Ciphertext *in,
-                                       const Evaluator *self);
+HIFHE_ERROR BGV_Evaluator_Rerandomize(Ciphertext *out, const Ciphertext *in, const Evaluator *self);
 
 #ifdef __cplusplus
 }

@@ -34,26 +34,21 @@ extern "C" {
 /* Uniform mod q into `out[0..count)`. `limbIndex` separates the seeded
  * streams of one chain: without it every limb replays the same candidates and
  * the residues come out correlated instead of independent. */
-HIFHE_ERROR Kernel_Sampler_UniformModQ(uint64_t *out, uint32_t count, Modulus q,
-                                     uint32_t limbIndex,
-                                     const BgvEntropy *src);
+HIFHE_ERROR Kernel_Sampler_UniformModQ(uint64_t *out, uint32_t count, Modulus q, uint32_t limbIndex,
+                                       const BgvEntropy *src);
 
 /* Ternary secret, `count` outputs into `out[0..count)` in signed int64. */
-HIFHE_ERROR Kernel_Sampler_Ternary(int64_t *out, uint32_t count,
-                                 const BgvEntropy *src);
+HIFHE_ERROR Kernel_Sampler_Ternary(int64_t *out, uint32_t count, const BgvEntropy *src);
 
 /* Fixed-Hamming-weight ternary: weight/2 entries +1, weight/2 entries -1,
  * rest 0, then shuffled. Construction order matters for seeded replay:
  * +1 block, -1 block, then Fisher-Yates walking i from `count` down to 1,
  * swapping i-1 with a uniform j in [0, i).
  * `weight` rounds down to even; weight > count is rejected. */
-HIFHE_ERROR Kernel_Sampler_TernaryFixedWeight(int64_t *out, uint32_t count,
-                                            uint32_t weight,
-                                            const BgvEntropy *src);
+HIFHE_ERROR Kernel_Sampler_TernaryFixedWeight(int64_t *out, uint32_t count, uint32_t weight, const BgvEntropy *src);
 
 /* CBD(eta) noise into `out[0..count)`, signed int64. */
-HIFHE_ERROR Kernel_Sampler_CBD(int64_t *out, uint32_t count, uint32_t eta,
-                             const BgvEntropy *src);
+HIFHE_ERROR Kernel_Sampler_CBD(int64_t *out, uint32_t count, uint32_t eta, const BgvEntropy *src);
 
 #ifdef __cplusplus
 }

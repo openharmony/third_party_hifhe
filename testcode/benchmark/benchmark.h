@@ -70,51 +70,49 @@ static inline double BenchUsPerOp(uint64_t count, uint64_t elapsedNs)
 
 /* Run func a fixed number of times. rc must equal ok on every iteration. The
  * first failure stops the loop and reports. */
-#define BENCH_TIMES(func, rc, ok, slots, times, header)                                  \
-    {                                                                                    \
-        uint32_t benchTimes = (uint32_t)(times);                                         \
-        uint64_t start = BenchNowNs();                                                   \
-        for (uint32_t i = 0; i < benchTimes; i++) {                                      \
-            rc = func;                                                                   \
-            if (rc != ok) {                                                              \
-                printf("Error: %s, ret = %08x\n", #func, rc);                            \
-                break;                                                                   \
-            }                                                                            \
-        }                                                                                \
-        uint64_t elapsed = BenchNowNs() - start;                                         \
-        printf("%-38s, %8d, %12u, %14.2f, %14.3f, %14.2f\n", header, (int)(slots),       \
-               benchTimes, (double)elapsed / 1000000.0,                                  \
-               BenchUsPerOp(benchTimes, elapsed), BenchOpsPerSec(benchTimes, elapsed));  \
+#define BENCH_TIMES(func, rc, ok, slots, times, header)                                                              \
+    {                                                                                                                \
+        uint32_t benchTimes = (uint32_t)(times);                                                                     \
+        uint64_t start = BenchNowNs();                                                                               \
+        for (uint32_t i = 0; i < benchTimes; i++) {                                                                  \
+            rc = func;                                                                                               \
+            if (rc != ok) {                                                                                          \
+                printf("Error: %s, ret = %08x\n", #func, rc);                                                        \
+                break;                                                                                               \
+            }                                                                                                        \
+        }                                                                                                            \
+        uint64_t elapsed = BenchNowNs() - start;                                                                     \
+        printf("%-38s, %8d, %12u, %14.2f, %14.3f, %14.2f\n", header, (int)(slots), benchTimes,                       \
+               (double)elapsed / 1000000.0, BenchUsPerOp(benchTimes, elapsed), BenchOpsPerSec(benchTimes, elapsed)); \
     }
 
 /* Run func until the accumulated time reaches secs. */
-#define BENCH_SECONDS(func, rc, ok, slots, secs, header)                                 \
-    {                                                                                    \
-        uint64_t totalTime = (uint64_t)(secs) * 1000000000ULL;                           \
-        uint64_t elapsed = 0u;                                                           \
-        uint64_t cnt = 0u;                                                               \
-        while (elapsed < totalTime) {                                                    \
-            uint64_t start = BenchNowNs();                                               \
-            rc = func;                                                                   \
-            elapsed += BenchNowNs() - start;                                             \
-            if (rc != ok) {                                                              \
-                printf("Error: %s, ret = %08x\n", #func, rc);                            \
-                break;                                                                   \
-            }                                                                            \
-            cnt++;                                                                       \
-        }                                                                                \
-        printf("%-38s, %8d, %12" PRIu64 ", %14.2f, %14.3f, %14.2f\n", header,            \
-               (int)(slots), cnt, (double)elapsed / 1000000.0,                           \
-               BenchUsPerOp(cnt, elapsed), BenchOpsPerSec(cnt, elapsed));                \
+#define BENCH_SECONDS(func, rc, ok, slots, secs, header)                                               \
+    {                                                                                                  \
+        uint64_t totalTime = (uint64_t)(secs) * 1000000000ULL;                                         \
+        uint64_t elapsed = 0u;                                                                         \
+        uint64_t cnt = 0u;                                                                             \
+        while (elapsed < totalTime) {                                                                  \
+            uint64_t start = BenchNowNs();                                                             \
+            rc = func;                                                                                 \
+            elapsed += BenchNowNs() - start;                                                           \
+            if (rc != ok) {                                                                            \
+                printf("Error: %s, ret = %08x\n", #func, rc);                                          \
+                break;                                                                                 \
+            }                                                                                          \
+            cnt++;                                                                                     \
+        }                                                                                              \
+        printf("%-38s, %8d, %12" PRIu64 ", %14.2f, %14.3f, %14.2f\n", header, (int)(slots), cnt,       \
+               (double)elapsed / 1000000.0, BenchUsPerOp(cnt, elapsed), BenchOpsPerSec(cnt, elapsed)); \
     }
 
-#define BENCH_RUN(func, rc, ok, slots, opts, header)                        \
-    do {                                                                    \
-        if ((opts)->seconds != 0u) {                                        \
-            BENCH_SECONDS(func, rc, ok, slots, (opts)->seconds, header);    \
-        } else {                                                            \
-            BENCH_TIMES(func, rc, ok, slots, (opts)->times, header);        \
-        }                                                                   \
+#define BENCH_RUN(func, rc, ok, slots, opts, header)                     \
+    do {                                                                 \
+        if ((opts)->seconds != 0u) {                                     \
+            BENCH_SECONDS(func, rc, ok, slots, (opts)->seconds, header); \
+        } else {                                                         \
+            BENCH_TIMES(func, rc, ok, slots, (opts)->times, header);     \
+        }                                                                \
     } while (0)
 
 #define BENCH_RUN_VA(func, rc, ok, slots, opts, headerFmt, ...)     \
@@ -132,23 +130,23 @@ static inline double BenchUsPerOp(uint64_t count, uint64_t elapsedNs)
 
 /* ---- operation ids ----
  * A bitmask so -a Bgv-Encrypt can select a single operation. */
-#define HIFHE_BENCH_KEYGEN     0x00000001u
-#define HIFHE_BENCH_ENCODE     0x00000002u
-#define HIFHE_BENCH_DECODE     0x00000004u
-#define HIFHE_BENCH_ENCRYPT    0x00000008u
-#define HIFHE_BENCH_DECRYPT    0x00000010u
-#define HIFHE_BENCH_ADD        0x00000020u
-#define HIFHE_BENCH_MUL        0x00000040u
-#define HIFHE_BENCH_RELIN      0x00000080u
-#define HIFHE_BENCH_ROTATE     0x00000100u
-#define HIFHE_BENCH_MODSWITCH  0x00000200u
-#define HIFHE_BENCH_NTT        0x00000400u
-#define HIFHE_BENCH_INTT       0x00000800u
-#define HIFHE_BENCH_TABLE      0x00001000u
-#define HIFHE_BENCH_ARITH      0x00002000u
-#define HIFHE_BENCH_CTXBUILD   0x00004000u
-#define HIFHE_BENCH_RERAND     0x00008000u
-#define HIFHE_BENCH_ALL        0xffffffffu
+#define HIFHE_BENCH_KEYGEN    0x00000001u
+#define HIFHE_BENCH_ENCODE    0x00000002u
+#define HIFHE_BENCH_DECODE    0x00000004u
+#define HIFHE_BENCH_ENCRYPT   0x00000008u
+#define HIFHE_BENCH_DECRYPT   0x00000010u
+#define HIFHE_BENCH_ADD       0x00000020u
+#define HIFHE_BENCH_MUL       0x00000040u
+#define HIFHE_BENCH_RELIN     0x00000080u
+#define HIFHE_BENCH_ROTATE    0x00000100u
+#define HIFHE_BENCH_MODSWITCH 0x00000200u
+#define HIFHE_BENCH_NTT       0x00000400u
+#define HIFHE_BENCH_INTT      0x00000800u
+#define HIFHE_BENCH_TABLE     0x00001000u
+#define HIFHE_BENCH_ARITH     0x00002000u
+#define HIFHE_BENCH_CTXBUILD  0x00004000u
+#define HIFHE_BENCH_RERAND    0x00008000u
+#define HIFHE_BENCH_ALL       0xffffffffu
 
 typedef struct Operation_ Operation;
 typedef struct CtxOps_ CtxOps;
@@ -157,58 +155,58 @@ typedef struct BenchCtx_ BenchCtx;
 typedef struct {
     uint32_t times;
     uint32_t seconds;
-    int32_t  presetId;
+    int32_t presetId;
 } BenchExecOptions;
 
 /* A module owns whatever state its operations need. The driver only passes
  * the pointer around. setUp receives the preset so it can size that state. */
 typedef int32_t (*BenchSetUp)(void **ctx, int32_t presetId);
-typedef void    (*BenchTearDown)(void *ctx);
+typedef void (*BenchTearDown)(void *ctx);
 typedef int32_t (*BenchOpFn)(void *ctx, const BenchExecOptions *opts);
 
 struct Operation_ {
-    uint32_t    id;
-    const char *name;   /* "<Module><Op>", matched against -a <Module>-<Op> */
-    BenchOpFn   oper;
+    uint32_t id;
+    const char *name; /* "<Module><Op>", matched against -a <Module>-<Op> */
+    BenchOpFn oper;
 };
 
 struct CtxOps_ {
-    int32_t       opsNum;
-    BenchSetUp    setUp;
+    int32_t opsNum;
+    BenchSetUp setUp;
     BenchTearDown tearDown;
-    Operation     ops[];
+    Operation ops[];
 };
 
 struct BenchCtx_ {
-    const char    *name;
-    const CtxOps  *ctxOps;
+    const char *name;
+    const CtxOps *ctxOps;
     const int32_t *presetIds;
-    uint32_t       presetIdsNum;
-    uint32_t       times;
-    uint32_t       seconds;
+    uint32_t presetIdsNum;
+    uint32_t times;
+    uint32_t seconds;
 };
 
 #define DEFINE_OPER(id, oper) {id, #oper, oper}
 
 /* Variadic, unlike the upstream fixed KEY_GEN/ENC/DEC/SIGN/VERIFY sets. HiFHE
  * modules do not share one operation vocabulary. */
-#define DEFINE_HIFHE_OPS(alg, ...)                       \
-    enum { alg##_OPS_NUM = COUNT_OPS(__VA_ARGS__) };   \
-    static const CtxOps alg##CtxOps = {                \
-        .opsNum   = alg##_OPS_NUM,                     \
-        .setUp    = alg##SetUp,                        \
-        .tearDown = alg##TearDown,                     \
-        .ops      = {__VA_ARGS__},                     \
+#define DEFINE_HIFHE_OPS(alg, ...)                   \
+    enum { alg##_OPS_NUM = COUNT_OPS(__VA_ARGS__) }; \
+    static const CtxOps alg##CtxOps = {              \
+        .opsNum = alg##_OPS_NUM,                     \
+        .setUp = alg##SetUp,                         \
+        .tearDown = alg##TearDown,                   \
+        .ops = {__VA_ARGS__},                        \
     }
 
 #define DEFINE_BENCH_CTX_TIMES(alg, pIds, pIdsNum, ts) \
     static const BenchCtx g_##alg##BenchCtx = {        \
-        .name         = #alg,                          \
-        .ctxOps       = &alg##CtxOps,                  \
-        .presetIds    = pIds,                          \
+        .name = #alg,                                  \
+        .ctxOps = &alg##CtxOps,                        \
+        .presetIds = pIds,                             \
         .presetIdsNum = pIdsNum,                       \
-        .times        = ts,                            \
-        .seconds      = 0u,                            \
+        .times = ts,                                   \
+        .seconds = 0u,                                 \
     };                                                 \
     const BenchCtx *BenchmarkGet##alg(void)            \
     {                                                  \
@@ -216,7 +214,7 @@ struct BenchCtx_ {
     }
 
 /* Provided by the driver. */
-bool        MatchAlgorithm(const char *pattern, const char *name);
+bool MatchAlgorithm(const char *pattern, const char *name);
 const char *BenchPresetName(int32_t presetId);
 
 #endif /* HIFHE_BENCHMARK_H */

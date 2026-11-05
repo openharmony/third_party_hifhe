@@ -25,17 +25,16 @@
 extern "C" {
 #endif
 
-HIFHE_ERROR RLWE_CrtPoly_Add   (CrtPoly *out, const CrtPoly *a, const CrtPoly *b);
-HIFHE_ERROR RLWE_CrtPoly_Sub   (CrtPoly *out, const CrtPoly *a, const CrtPoly *b);
-HIFHE_ERROR RLWE_CrtPoly_Neg   (CrtPoly *out, const CrtPoly *a);
+HIFHE_ERROR RLWE_CrtPoly_Add(CrtPoly *out, const CrtPoly *a, const CrtPoly *b);
+HIFHE_ERROR RLWE_CrtPoly_Sub(CrtPoly *out, const CrtPoly *a, const CrtPoly *b);
+HIFHE_ERROR RLWE_CrtPoly_Neg(CrtPoly *out, const CrtPoly *a);
 HIFHE_ERROR RLWE_CrtPoly_MulDot(CrtPoly *out, const CrtPoly *a, const CrtPoly *b);
 /* out += a * b, coefficient-wise per limb. */
 HIFHE_ERROR RLWE_CrtPoly_MulDotAcc(CrtPoly *out, const CrtPoly *a, const CrtPoly *b);
 /* out = a * x, the same scalar reduced against each limb. */
 HIFHE_ERROR RLWE_CrtPoly_MulScalar(CrtPoly *out, const CrtPoly *a, uint64_t x);
 /* out = a * x[i] in limb i, for factors too wide for one word. */
-HIFHE_ERROR RLWE_CrtPoly_MulScalarPerLimb(CrtPoly *out, const CrtPoly *a,
-                                        const uint64_t *xPerLimb);
+HIFHE_ERROR RLWE_CrtPoly_MulScalarPerLimb(CrtPoly *out, const CrtPoly *a, const uint64_t *xPerLimb);
 /* Copy coefficients into `dst`'s existing storage. Works on a view. */
 HIFHE_ERROR RLWE_CrtPoly_Assign(CrtPoly *dst, const CrtPoly *src);
 /* One signed length-N vector into every limb, mapped into [0, q_i).
@@ -44,7 +43,7 @@ HIFHE_ERROR RLWE_CrtPoly_SetSigned(CrtPoly *self, const int64_t *v);
 
 /* Convert between coefficient and NTT domains. Both polys must share
  * base + N. */
-HIFHE_ERROR RLWE_CrtPoly_ToNtt (CrtPoly *self);
+HIFHE_ERROR RLWE_CrtPoly_ToNtt(CrtPoly *self);
 HIFHE_ERROR RLWE_CrtPoly_ToPoly(CrtPoly *self);
 
 #ifdef __cplusplus

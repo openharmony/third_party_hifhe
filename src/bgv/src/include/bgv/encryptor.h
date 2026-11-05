@@ -32,37 +32,26 @@ extern "C" {
 #endif
 
 typedef struct {
-    BGVContext      *context;   /* not owned */
-    const PublicKey *pk;        /* not owned; may be NULL for sym-only */
-    const SecretKey *sk;        /* not owned; may be NULL for asym-only */
+    BGVContext *context; /* not owned */
+    const PublicKey *pk; /* not owned; may be NULL for sym-only */
+    const SecretKey *sk; /* not owned; may be NULL for asym-only */
 } Encryptor;
 
-HIFHE_ERROR BGV_Encryptor_CreateFromSecret(Encryptor *self,
-                                         const SecretKey *sk,
-                                         BGVContext *ctx);
-HIFHE_ERROR BGV_Encryptor_CreateFromPublic(Encryptor *self,
-                                         const PublicKey *pk,
-                                         const SecretKey *sk,   /* may be NULL */
-                                         BGVContext *ctx);
-HIFHE_ERROR BGV_Encryptor_Destroy         (Encryptor *self);
+HIFHE_ERROR BGV_Encryptor_CreateFromSecret(Encryptor *self, const SecretKey *sk, BGVContext *ctx);
+HIFHE_ERROR BGV_Encryptor_CreateFromPublic(Encryptor *self, const PublicKey *pk, const SecretKey *sk, /* may be NULL */
+                                           BGVContext *ctx);
+HIFHE_ERROR BGV_Encryptor_Destroy(Encryptor *self);
 
 /* ---- Zero-encryption ---- */
-HIFHE_ERROR BGV_Encryptor_EncryptZeroSymmetric (Ciphertext *out,
-                                               const SecretKey *sk,
-                                               const Encryptor *self);
-HIFHE_ERROR BGV_Encryptor_EncryptZeroAsymmetric(Ciphertext *out,
-                                               const PublicKey *pk,
-                                               const Encryptor *self);
+HIFHE_ERROR BGV_Encryptor_EncryptZeroSymmetric(Ciphertext *out, const SecretKey *sk, const Encryptor *self);
+HIFHE_ERROR BGV_Encryptor_EncryptZeroAsymmetric(Ciphertext *out, const PublicKey *pk, const Encryptor *self);
 
 /* ---- Non-zero encryption ---- */
-HIFHE_ERROR BGV_Encryptor_EncryptSymmetric  (Ciphertext *out, const Plaintext *pt,
-                                            const Encryptor *self);
-HIFHE_ERROR BGV_Encryptor_EncryptAsymmetric (Ciphertext *out, const Plaintext *pt,
-                                            const Encryptor *self);
+HIFHE_ERROR BGV_Encryptor_EncryptSymmetric(Ciphertext *out, const Plaintext *pt, const Encryptor *self);
+HIFHE_ERROR BGV_Encryptor_EncryptAsymmetric(Ciphertext *out, const Plaintext *pt, const Encryptor *self);
 
 /* ---- Decryption ---- */
-HIFHE_ERROR BGV_Encryptor_Decrypt(Plaintext *out, const Ciphertext *ct,
-                                const Encryptor *self);
+HIFHE_ERROR BGV_Encryptor_Decrypt(Plaintext *out, const Ciphertext *ct, const Encryptor *self);
 
 #ifdef __cplusplus
 }

@@ -37,41 +37,12 @@
 #include "crypt_util_rand.h"
 #include "bsl_err_internal.h"
 
-char PROVIDER_PATH[] = "../../build";
-
 #ifndef HITLS_BSL_SAL_MEM
 void *TestMalloc(uint32_t len)
 {
     return malloc((size_t)len);
 }
 #endif
-
-int32_t TestHifheProviderLoad(void)
-{
-    const char *envPath = getenv("HIFHE_PROVIDER_PATH");
-    int32_t ret = CRYPT_EAL_ProviderSetLoadPath(NULL, (envPath != NULL) ? envPath : PROVIDER_PATH);
-    if (ret != 0) {
-        printf("set provider path failed.\n");
-        return 1;
-    }
-
-    ret = CRYPT_EAL_ProviderLoad(NULL, BSL_SAL_LIB_FMT_LIBSO, "hifhe_provider", NULL, NULL);
-    if (ret != 0) {
-        printf("load provider failed: %d.\n", ret);
-        return 1;
-    }
-
-    return 0;
-}
-int32_t TestHifheProviderUnload(void)
-{
-    int32_t ret = CRYPT_EAL_ProviderUnload(NULL, BSL_SAL_LIB_FMT_LIBSO, "hifhe_provider");
-    if (ret != 0) {
-        printf("unload provider failed: %d.\n", ret);
-        return 1;
-    }
-    return 0;
-}
 
 void TestMemInit(void)
 {
@@ -159,7 +130,6 @@ int32_t TestSimpleRandExSelfCheck(void *libCtx, uint8_t *buff, uint32_t len)
 
 int TestRandInitEx(void *libCtx)
 {
-    (void)libCtx;
     int drbgAlgId = GetAvailableRandAlgId();
     int32_t ret;
     if (drbgAlgId == -1) {
@@ -177,25 +147,25 @@ int TestRandInitEx(void *libCtx)
 
     BSL_ERR_SET_MARK();
 
-#ifdef HITLS_CRYPTO_PROVIDER
+    if (libCtx != NULL) {
 #ifndef HITLS_CRYPTO_ENTROPY
-    BSL_Param param[4] = {0};
-    (void)BSL_PARAM_InitValue(&param[0], CRYPT_PARAM_RAND_SEEDCTX, BSL_PARAM_TYPE_CTX_PTR, &seedCtx, 0);
-    (void)BSL_PARAM_InitValue(&param[1], CRYPT_PARAM_RAND_SEED_GETENTROPY, BSL_PARAM_TYPE_FUNC_PTR,
-        seedMeth.getEntropy, 0);
-    (void)BSL_PARAM_InitValue(&param[2], CRYPT_PARAM_RAND_SEED_CLEANENTROPY, BSL_PARAM_TYPE_FUNC_PTR,
-        seedMeth.cleanEntropy, 0);
-    ret = CRYPT_EAL_ProviderRandInitCtx(libCtx, (CRYPT_RAND_AlgId)drbgAlgId, "provider=default", NULL, 0, param);
+        BSL_Param param[4] = {0};
+        (void)BSL_PARAM_InitValue(&param[0], CRYPT_PARAM_RAND_SEEDCTX, BSL_PARAM_TYPE_CTX_PTR, &seedCtx, 0);
+        (void)BSL_PARAM_InitValue(&param[1], CRYPT_PARAM_RAND_SEED_GETENTROPY, BSL_PARAM_TYPE_FUNC_PTR,
+            seedMeth.getEntropy, 0);
+        (void)BSL_PARAM_InitValue(&param[2], CRYPT_PARAM_RAND_SEED_CLEANENTROPY, BSL_PARAM_TYPE_FUNC_PTR,
+            seedMeth.cleanEntropy, 0);
+        ret = CRYPT_EAL_ProviderRandInitCtx(libCtx, (CRYPT_RAND_AlgId)drbgAlgId, "provider=default", NULL, 0, param);
 #else
-    ret = CRYPT_EAL_ProviderRandInitCtx(libCtx, (CRYPT_RAND_AlgId)drbgAlgId, "provider=default", NULL, 0, NULL);
+        ret = CRYPT_EAL_ProviderRandInitCtx(libCtx, (CRYPT_RAND_AlgId)drbgAlgId, "provider=default", NULL, 0, NULL);
 #endif
-#else
+    } else {
 #ifndef HITLS_CRYPTO_ENTROPY
-    ret = CRYPT_EAL_RandInit(drbgAlgId, &seedMeth, (void *)&seedCtx, NULL, 0);
+        ret = CRYPT_EAL_RandInit(drbgAlgId, &seedMeth, (void *)&seedCtx, NULL, 0);
 #else
-    ret = CRYPT_EAL_RandInit(drbgAlgId, NULL, NULL, NULL, 0);
+        ret = CRYPT_EAL_RandInit(drbgAlgId, NULL, NULL, NULL, 0);
 #endif
-#endif
+    }
     if (ret == CRYPT_EAL_ERR_DRBG_REPEAT_INIT) {
         BSL_ERR_POP_TO_MARK();
         ret = CRYPT_SUCCESS;
@@ -226,6 +196,7 @@ int TestRandInitSelfCheck(void)
 
 void TestRandDeInit(void)
 {
+    CRYPT_EAL_SetRandCallBack(NULL);
     CRYPT_RandRegistEx(NULL);
-    CRYPT_EAL_RandDeinitEx(NULL);
+    CRYPT_EAL_RandDeinit();
 }

@@ -25,9 +25,9 @@
 extern "C" {
 #endif
 
-HIFHE_ERROR RLWE_RnsPoly_Add   (RnsPoly *out, const RnsPoly *a, const RnsPoly *b);
-HIFHE_ERROR RLWE_RnsPoly_Sub   (RnsPoly *out, const RnsPoly *a, const RnsPoly *b);
-HIFHE_ERROR RLWE_RnsPoly_Neg   (RnsPoly *out, const RnsPoly *a);
+HIFHE_ERROR RLWE_RnsPoly_Add(RnsPoly *out, const RnsPoly *a, const RnsPoly *b);
+HIFHE_ERROR RLWE_RnsPoly_Sub(RnsPoly *out, const RnsPoly *a, const RnsPoly *b);
+HIFHE_ERROR RLWE_RnsPoly_Neg(RnsPoly *out, const RnsPoly *a);
 /* Coefficient-wise product (NTT-domain multiply for two HIFHE_NTT polys). */
 HIFHE_ERROR RLWE_RnsPoly_MulDot(RnsPoly *out, const RnsPoly *a, const RnsPoly *b);
 /* out += a * b, coefficient-wise. */
@@ -36,7 +36,7 @@ HIFHE_ERROR RLWE_RnsPoly_MulDotAcc(RnsPoly *out, const RnsPoly *a, const RnsPoly
 HIFHE_ERROR RLWE_RnsPoly_MulScalar(RnsPoly *out, const RnsPoly *a, uint64_t x);
 /* `v[0..dataSize)` signed, mapped into [0, q). */
 HIFHE_ERROR RLWE_RnsPoly_SetSigned(RnsPoly *self, const int64_t *v);
-HIFHE_ERROR RLWE_RnsPoly_ToNtt (RnsPoly *self);
+HIFHE_ERROR RLWE_RnsPoly_ToNtt(RnsPoly *self);
 HIFHE_ERROR RLWE_RnsPoly_ToPoly(RnsPoly *self);
 
 #ifdef __cplusplus

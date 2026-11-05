@@ -35,15 +35,15 @@ extern "C" {
 /* 59 is the ceiling the Proth search works within, so validation and
  * generation agree on where the band ends. */
 #define HIFHE_BGV_MAX_CIPHER_BITS 59u
-#define HIFHE_BGV_MIN_PLAIN_BITS   2u
+#define HIFHE_BGV_MIN_PLAIN_BITS  2u
 #define HIFHE_BGV_MAX_PLAIN_BITS  59u
 
 /* N must be a power of two in [1024, 32768], the range covered by the
  * security tables and the Proth search. */
-bool BGV_Params_IsPolyDegreeSupported (uint32_t polyDegree);
+bool BGV_Params_IsPolyDegreeSupported(uint32_t polyDegree);
 bool BGV_Params_IsPlainModBitSupported(uint32_t bits);
 bool BGV_Params_IsCipherModBitSupported(uint32_t bits);
-bool BGV_Params_IsChainLenSupported   (uint32_t chainLen);
+bool BGV_Params_IsChainLenSupported(uint32_t chainLen);
 
 /* Max total ciphertext-modulus bits for a ternary secret. Returns 0 for an
  * unsupported (polyDegree, securityLevel) pair. */
@@ -51,11 +51,8 @@ uint32_t BGV_Params_HEMaxBitsTernaryClassical(uint32_t polyDegree, uint32_t secu
 
 /* Full combination check. Returns HIFHE_SUCCESS or HIFHE_PARAM_INVALID.
  * `securityLevel` of 0 falls back to HIFHE_BGV_DEFAULT_SECURITY_LEVEL. */
-HIFHE_ERROR BGV_Params_Validate(uint32_t polyDegree,
-                              uint32_t plainModBit,
-                              const uint32_t *cipherModBit,
-                              uint32_t chainLen,
-                              uint32_t securityLevel);
+HIFHE_ERROR BGV_Params_Validate(uint32_t polyDegree, uint32_t plainModBit, const uint32_t *cipherModBit,
+                                uint32_t chainLen, uint32_t securityLevel);
 
 /* A pinned plaintext modulus must be NTT-friendly for this ring
  * (t = 1 mod 2N) so the batching (LUT) encoder can transform under it. */
