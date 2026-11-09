@@ -13,6 +13,38 @@
 import("//build/ohos.gni")
 
 # ---------------------------------------------------------------------------
+# Architecture / platform selection.
+#
+# HiFHE has no hand-written assembly, so every target compiles the same source
+# list. The branches below keep the compile and link flags in step with the
+# platform selected by third_party_openhitls/BUILD.gn, whose public headers and
+# libraries HiFHE is built against. OpenHarmony currently ships HiFHE on arm64
+# devices and on the x86_64 emulator.
+# ---------------------------------------------------------------------------
+hifhe_selected_platform = ""
+if (current_cpu == "arm64" && current_os == "ohos" && host_os == "linux") {
+    hifhe_selected_platform = "linux-armv8"
+} else if (current_cpu == "x86_64" && current_os == "ohos" &&
+           host_os == "linux") {
+    hifhe_selected_platform = "linux-x86_64"
+}
+
+hifhe_platform_defines = []
+hifhe_platform_cflags = []
+hifhe_platform_ldflags = [
+    "-fPIC",
+    "-Wl,-Bsymbolic",
+]
+if (hifhe_selected_platform == "linux-armv8") {
+    hifhe_platform_ldflags += [ "-Wl,--lto-O0" ]
+} else if (hifhe_selected_platform == "linux-x86_64") {
+    # x86_64 needs no architecture-specific defines; the C sources and the
+    # 128-bit kernel fallback are selected by the compiler itself. Keep -m64
+    # explicit so the emulator build always emits 64-bit code.
+    hifhe_platform_cflags += [ "-m64" ]
+}
+
+# ---------------------------------------------------------------------------
 # Defines / include directories shared by every HiFHE translation unit.
 #
 # openHiTLS is compiled independently (third_party_openhitls) and is consumed
@@ -23,7 +55,7 @@ import("//build/ohos.gni")
 hifhe_defines = [
     "HIFHE_ENABLE_BGV",
     "__FILENAME__=__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__",
-]
+] + hifhe_platform_defines
 
 hifhe_include_dirs = [
     "include",
@@ -87,7 +119,7 @@ config("hifhe_private_config") {
         # to hidden visibility.
         "-fvisibility=default",
         "-Wno-int-conversion",
-    ]
+    ] + hifhe_platform_cflags
 }
 
 config("hifhe_public_config") {
@@ -122,6 +154,7 @@ ohos_shared_library("libhifhe") {
         "openhitls:openhitls_crypto",
     ]
     public_configs = [ ":hifhe_public_config" ]
+    ldflags = hifhe_platform_ldflags
     version_script = "cmake/hifhe.exports"
     install_images = [
         "system",
