@@ -137,6 +137,13 @@ ohos_source_set("hifhe_source") {
     part_name = "hifhe"
     sources = hifhe_sources
     configs = [ ":hifhe_private_config" ]
+    # Forward-edge CFI and backward-edge return address protection.
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
+    branch_protector_ret = "pac_ret"
     # Pulls in the public headers of openHiTLS (include/bsl, include/crypto).
     external_deps = [
         "openhitls:openhitls_bsl",
@@ -149,6 +156,12 @@ ohos_shared_library("libhifhe") {
     part_name = "hifhe"
     sources = []
     deps = [ ":hifhe_source" ]
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
+    branch_protector_ret = "pac_ret"
     external_deps = [
         "openhitls:openhitls_bsl",
         "openhitls:openhitls_crypto",
