@@ -29,6 +29,10 @@ if (current_cpu == "arm64" && current_os == "ohos" && host_os == "linux") {
     hifhe_selected_platform = "linux-x86_64"
 }
 
+declare_args() {
+    hifhe_enabled = true
+}
+
 hifhe_platform_defines = []
 hifhe_platform_cflags = []
 hifhe_platform_ldflags = [

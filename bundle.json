@@ -16,7 +16,9 @@
         "name":"hifhe",
         "subsystem":"thirdparty",
         "syscap":[],
-        "features":[],
+        "features":[
+            "hifhe_enabled"
+        ],
         "adapted_system_type":[
             "standard"
         ],
